@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model PosterTheme {
+  id             String   @id @default(cuid())
+  collection     String
+  themeJa        String
+  themeEn        String
+  verticalTextJa String
+  subtitleEn     String
+  motif          String
+  colorPalette   String
+  stylePreset    String   @default("")
+  status         String   @default("idea")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  generations PosterGeneration[]
+}
+
+model PosterGeneration {
+  id                String   @id @default(cuid())
+  themeId           String
+  prompt            String   @default("")
+  imagePath         String   @default("")
+  imageUrl          String   @default("")
+  qualityScore      Int?
+  qualityComment    String   @default("")
+  etsyTitle         String   @default("")
+  etsyDescription   String   @default("")
+  etsyTags          String   @default("")
+  pinterestCaption  String   @default("")
+  instagramCaption  String   @default("")
+  xCaption          String   @default("")
+  status            String   @default("idea")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  theme PosterTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+}
