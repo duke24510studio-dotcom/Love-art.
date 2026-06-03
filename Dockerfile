@@ -16,7 +16,9 @@ COPY public ./public
 COPY src ./src
 
 ENV DATABASE_URL="file:./dev.db"
-RUN npx prisma generate && npm run build
+RUN npx prisma generate \
+  && npx prisma migrate deploy \
+  && npm run build
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0

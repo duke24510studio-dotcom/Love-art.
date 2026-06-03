@@ -1,56 +1,59 @@
-# 公開手順（GitHub + Railway）
-
-このアプリは SQLite とローカル画像保存を使うため、**Vercel ではなく Railway（Docker）** での公開を推奨します。
-
-## 1. GitHub にプッシュ
+# 公開手順
 
 リポジトリ: [duke24510studio-dotcom/Love-art.](https://github.com/duke24510studio-dotcom/Love-art.)
 
-```powershell
-cd c:\Users\satos\japandi-poster-auto-studio
-git push -u origin master
-```
+**Vercel / GitHub Pages では動きません**（SQLite + ローカル画像のため）。  
+**Render** または **Railway**（Docker）を使ってください。
 
-※ `duke24510studio-dotcom` アカウントで push してください。
+---
 
-## 2. Railway でデプロイ
+## 方法 A: Render（推奨・約5分）
 
-1. [Railway](https://railway.com/) にログイン
-2. **New Project** → **Deploy from GitHub repo** → このリポジトリを選択
-3. **Settings** → **Volumes** → マウントパス `/data` のボリュームを追加
-4. **Variables** に以下を設定:
+1. [Render Dashboard](https://dashboard.render.com/) にログイン
+2. **New** → **Blueprint**
+3. GitHub で `Love-art.` リポジトリを接続
+4. `render.yaml` が読み込まれる → **Apply**
+5. 環境変数 `OPENAI_API_KEY` を入力（Secret）
+6. デプロイ完了後、表示された URL を開く
+7. 初回のみ Shell で: `npm run seed`（20テーマ投入）
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/duke24510studio-dotcom/Love-art.)
+
+---
+
+## 方法 B: Railway
+
+1. [Railway](https://railway.com/) → **New Project** → **Deploy from GitHub** → `Love-art.`
+2. **Volumes** → マウント `/data`
+3. Variables:
 
 | Variable | Value |
 |----------|--------|
-| `OPENAI_API_KEY` | OpenAI の API キー |
+| `OPENAI_API_KEY` | OpenAI API キー |
 | `DATABASE_URL` | `file:/data/dev.db` |
 | `OUTPUT_DIR` | `/data/outputs` |
-| `NODE_ENV` | `production` |
 
-5. デプロイ完了後、表示された URL を開く
+4. デプロイ後 URL を開く
 
-## 3. 初回のみシード（任意）
+---
 
-Railway の **Service** → **Shell** またはローカルで DB がある場合:
+## 使い方
 
-```bash
-npm run seed
-```
+1. `/posters` → テーマを開く
+2. **① Prompt** → **② Image** → **③ Etsy + SNS**
+3. 承認 → Export CSV/ZIP
 
-## 4. 使い方
-
-1. 公開 URL を開く
-2. `/posters` → テーマを選択
-3. 詳細画面で **① Prompt** → **② Image** → **③ Etsy + SNS**
-4. 承認後 **Export** で CSV / ZIP
+---
 
 ## ローカル開発
 
 ```bash
 cp env.example .env
-# OPENAI_API_KEY を設定
 npm install
+npm rebuild better-sqlite3
 npx prisma migrate dev
 npm run seed
 npm run dev
 ```
+
+Node **22** 推奨（`node -v` で確認）。

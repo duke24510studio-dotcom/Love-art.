@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 
+// DB-backed pages must not prerender at build time (fixes deploy builds)
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Japandi Poster Auto Studio",
   description: "Japandi-style Japanese poster generation and Etsy management system",

@@ -1,0 +1,21 @@
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: japandi-poster-studio
+    runtime: docker
+    plan: free
+    region: singapore
+    healthCheckPath: /
+    disk:
+      name: japandi-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:/data/dev.db
+      - key: OUTPUT_DIR
+        value: /data/outputs
+      - key: OPENAI_API_KEY
+        sync: false
