@@ -4,15 +4,14 @@
 
 ## 1. GitHub にプッシュ
 
-リポジトリ: [wolkjapandi-bot/etsy](https://github.com/wolkjapandi-bot/etsy)
+リポジトリ: [duke24510studio-dotcom/Love-art.](https://github.com/duke24510studio-dotcom/Love-art.)
 
 ```powershell
 cd c:\Users\satos\japandi-poster-auto-studio
 git push -u origin master
 ```
 
-※ `wolkjapandi-bot` アカウントで GitHub にログインした状態で実行してください。  
-別アカウント（例: duke24510studio）で push すると 403 になります。
+※ `duke24510studio-dotcom` アカウントで push してください。
 
 ## 2. Railway でデプロイ
 

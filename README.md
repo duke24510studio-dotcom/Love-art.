@@ -2,6 +2,8 @@
 
 海外向けの Japandi スタイル日本ポスターを生成・管理し、Etsy 販売用データと SNS 投稿文を作る管理システム。
 
+リポジトリ: [duke24510studio-dotcom/Love-art.](https://github.com/duke24510studio-dotcom/Love-art.)
+
 ---
 
 ## Stack
@@ -10,7 +12,7 @@
 - **TypeScript**
 - **Tailwind CSS v4**
 - **Prisma 7** + **SQLite**
-- **OpenAI API** (画像生成・テキスト生成 — TODO)
+- **OpenAI API** (DALL-E 3 + GPT-4o)
 - ローカル保存 `/outputs/images`
 
 ---
@@ -26,7 +28,7 @@ npm install
 ### 2. 環境変数設定
 
 ```bash
-cp .env.example .env
+cp env.example .env
 ```
 
 `.env` を編集して `OPENAI_API_KEY` を設定してください：
@@ -66,28 +68,7 @@ npm run dev
 | `/` | ダッシュボード |
 | `/posters` | ポスター一覧 |
 | `/posters/new` | 新規テーマ登録 |
-| `/posters/[id]` | 詳細・レビュー画面 |
-
----
-
-## npm スクリプト
-
-```bash
-npm run dev        # 開発サーバー起動
-npm run build      # 本番ビルド
-npm run seed       # 20テーマをDBに投入
-npm run db:push    # Prisma マイグレーション
-npm run db:studio  # Prisma Studio（DB GUI）
-```
-
----
-
-## ステータス
-
-```
-idea → prompted → generated → review → approved → exported
-                                      ↘ rejected
-```
+| `/posters/[id]` | 詳細・レビュー・AI生成 |
 
 ---
 
@@ -95,14 +76,18 @@ idea → prompted → generated → review → approved → exported
 
 ```
 ① /posters/new でテーマ登録
-② プロンプト生成（TODO）
-③ 画像生成（TODO: DALL-E 3）
-④ Etsy コピー生成（TODO: GPT-4o）
-⑤ SNS コピー生成（Instagram / Pinterest / X）
-⑥ /posters/[id] でレビュー
-⑦ 採用 / ボツ
-⑧ CSV・ZIP 出力 → Etsy に手動登録
+② プロンプト生成（POST /api/generate/prompt）
+③ 画像生成（POST /api/generate/poster）
+④ Etsy + SNS コピー（POST /api/generate/copy）
+⑤ /posters/[id] でレビュー → 採用 / ボツ
+⑥ CSV・ZIP 出力 → Etsy に手動登録
 ```
+
+---
+
+## 公開（Railway）
+
+手順は [DEPLOY.md](./DEPLOY.md) を参照。
 
 ---
 
@@ -114,16 +99,8 @@ idea → prompted → generated → review → approved → exported
 | GET/PATCH/DELETE | `/api/posters/[id]` | テーマ操作 |
 | POST | `/api/generations` | Generation 作成 |
 | PATCH/DELETE | `/api/generations/[id]` | Generation 操作 |
+| POST | `/api/generate/prompt` | プロンプト生成 |
+| POST | `/api/generate/poster` | DALL-E 3 画像生成 |
+| POST | `/api/generate/copy` | Etsy + SNS コピー |
 | POST | `/api/export/csv` | CSV 出力 |
 | POST | `/api/export/zip` | ZIP 出力 |
-
----
-
-## TODO（MVP 以降）
-
-- [ ] `POST /api/generate/prompt` — プロンプト生成
-- [ ] `POST /api/generate/poster` — DALL-E 3 画像生成
-- [ ] `POST /api/generate/copy` — Etsy + SNS コピー生成（GPT-4o）
-- [ ] Etsy API 連携
-- [ ] Pinterest / Instagram 自動投稿
-- [ ] バッチ生成（1日10作品）
