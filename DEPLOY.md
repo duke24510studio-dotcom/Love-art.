@@ -1,59 +1,37 @@
-# 公開手順
+# Render で公開（3ステップ）
 
 リポジトリ: [duke24510studio-dotcom/Love-art.](https://github.com/duke24510studio-dotcom/Love-art.)
 
-**Vercel / GitHub Pages では動きません**（SQLite + ローカル画像のため）。  
-**Render** または **Railway**（Docker）を使ってください。
+## ステップ 1 — このボタンを押す
 
----
+**[▶ Render でデプロイ](https://render.com/deploy?repo=https://github.com/duke24510studio-dotcom/Love-art.)**
 
-## 方法 A: Render（推奨・約5分）
+## ステップ 2 — GitHub 連携
 
-1. [Render Dashboard](https://dashboard.render.com/) にログイン
-2. **New** → **Blueprint**
-3. GitHub で `Love-art.` リポジトリを接続
-4. `render.yaml` が読み込まれる → **Apply**
-5. 環境変数 `OPENAI_API_KEY` を入力（Secret）
-6. デプロイ完了後、表示された URL を開く
-7. 初回のみ Shell で: `npm run seed`（20テーマ投入）
+- Render に GitHub を接続
+- リポジトリ `Love-art.` を選ぶ
+- **Apply** をクリック
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/duke24510studio-dotcom/Love-art.)
+## ステップ 3 — OpenAI キー
 
----
+- 環境変数 **`OPENAI_API_KEY`** にあなたのキーを入力
+- デプロイ完了を待つ（5〜10分）
 
-## 方法 B: Railway
+完了後、表示された URL（例: `https://japandi-poster-studio.onrender.com`）を開く。
 
-1. [Railway](https://railway.com/) → **New Project** → **Deploy from GitHub** → `Love-art.`
-2. **Volumes** → マウント `/data`
-3. Variables:
-
-| Variable | Value |
-|----------|--------|
-| `OPENAI_API_KEY` | OpenAI API キー |
-| `DATABASE_URL` | `file:/data/dev.db` |
-| `OUTPUT_DIR` | `/data/outputs` |
-
-4. デプロイ後 URL を開く
-
----
-
-## 使い方
-
-1. `/posters` → テーマを開く
-2. **① Prompt** → **② Image** → **③ Etsy + SNS**
-3. 承認 → Export CSV/ZIP
+- 初回起動時に **20テーマが自動投入** されます
+- `/posters` → テーマを開く → **① Prompt → ② Image → ③ Etsy + SNS**
 
 ---
 
 ## ローカル開発
 
 ```bash
+docker compose up -d
 cp env.example .env
+# OPENAI_API_KEY を .env に設定
 npm install
-npm rebuild better-sqlite3
 npx prisma migrate dev
 npm run seed
 npm run dev
 ```
-
-Node **22** 推奨（`node -v` で確認）。

@@ -1,21 +1,29 @@
-# https://render.com/docs/blueprint-spec
+# Render Blueprint — https://render.com/deploy?repo=https://github.com/duke24510studio-dotcom/Love-art.
+databases:
+  - name: japandi-db
+    plan: free
+    databaseName: japandi
+    user: japandi
+
 services:
   - type: web
     name: japandi-poster-studio
-    runtime: docker
+    runtime: node
     plan: free
     region: singapore
+    repo: https://github.com/duke24510studio-dotcom/Love-art.
+    branch: main
+    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: npm start
     healthCheckPath: /
-    disk:
-      name: japandi-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: file:/data/dev.db
+        fromDatabase:
+          name: japandi-db
+          property: connectionString
       - key: OUTPUT_DIR
-        value: /data/outputs
+        value: ./outputs
       - key: OPENAI_API_KEY
         sync: false

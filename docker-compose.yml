@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: japandi
+      POSTGRES_PASSWORD: japandi
+      POSTGRES_DB: japandi
+    ports:
+      - "5432:5432"
+    volumes:
+      - japandi_pg:/var/lib/postgresql/data
+
+volumes:
+  japandi_pg:
