@@ -256,8 +256,8 @@ export default function PosterDetailClient({ theme }: { theme: ThemeWithGenerati
               </p>
             )}
             <p className="text-xs opacity-50 leading-relaxed">
-              Requires <code className="opacity-80">OPENAI_API_KEY</code> in .env. Image uses DALL-E 3;
-              copy uses GPT-4o. Each step updates status automatically.
+              要 OpenAI API キー（<code className="opacity-80">npm run setup:openai</code>）。
+              画像=DALL-E 3、コピー=GPT-4o。Render 公開時は Environment に同じキーを設定。
             </p>
           </div>
 

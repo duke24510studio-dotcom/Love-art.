@@ -1,37 +1,40 @@
-# Render で公開（3ステップ）
+# Render で公開
 
-リポジトリ: [duke24510studio-dotcom/Love-art.](https://github.com/duke24510studio-dotcom/Love-art.)
+## OpenAI API キーとは？
 
-## ステップ 1 — このボタンを押す
+**OpenAI（ChatGPT の会社）に「このアプリから画像・文章を生成していい」と伝える合言葉**です。
 
-**[▶ Render でデプロイ](https://render.com/deploy?repo=https://github.com/duke24510studio-dotcom/Love-art.)**
+- こちらから自動で作ることはできません（あなたの OpenAI アカウントで1回だけ発行）
+- 無料枠／従量課金あり → [platform.openai.com/api-keys](https://platform.openai.com/api-keys) で `sk-...` をコピー
 
-## ステップ 2 — GitHub 連携
+### いちばん簡単な設定（ローカル + Render 同期）
 
-- Render に GitHub を接続
-- リポジトリ `Love-art.` を選ぶ
-- **Apply** をクリック
+```powershell
+cd c:\Users\satos\japandi-poster-auto-studio
+npm run setup:openai
+```
 
-## ステップ 3 — OpenAI キー
+1. 表示された OpenAI のページでキーを作成して貼り付け  
+2. `.env` に保存される  
+3. `RENDER_API_KEY` も `.env` にある場合 → **Render にも自動反映**
 
-- 環境変数 **`OPENAI_API_KEY`** にあなたのキーを入力
-- デプロイ完了を待つ（5〜10分）
+Render API キー（任意・Render 自動反映用）:  
+[dashboard.render.com → Account Settings → API Keys](https://dashboard.render.com/u/settings#api-keys)
 
-完了後、表示された URL（例: `https://japandi-poster-studio.onrender.com`）を開く。
+```env
+RENDER_API_KEY=rnd_...
+RENDER_SERVICE_NAME=japandi-poster-studio
+```
 
-- 初回起動時に **20テーマが自動投入** されます
-- `/posters` → テーマを開く → **① Prompt → ② Image → ③ Etsy + SNS**
+手動だけなら Render ダッシュボード → サービス → **Environment** → `OPENAI_API_KEY` = あなたの `sk-...`
 
 ---
 
-## ローカル開発
+## デプロイ手順
 
-```bash
-docker compose up -d
-cp env.example .env
-# OPENAI_API_KEY を .env に設定
-npm install
-npx prisma migrate dev
-npm run seed
-npm run dev
-```
+1. **[Render でデプロイ](https://render.com/deploy?repo=https://github.com/duke24510studio-dotcom/Love-art.)** を開く  
+2. GitHub 連携 → **Apply**  
+3. 上の `npm run setup:openai` でキーを用意（Render 画面で聞かれたら同じ `sk-...` を貼る）  
+4. デプロイ完了後 URL を開く → `/posters`
+
+初回は **20テーマが自動投入** されます。
