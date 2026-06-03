@@ -4,17 +4,15 @@
 
 ## 1. GitHub にプッシュ
 
-リポジトリ URL が `https://github.com/YOUR_USER/japandi-poster-auto-studio` の場合:
+リポジトリ: [wolkjapandi-bot/etsy](https://github.com/wolkjapandi-bot/etsy)
 
 ```powershell
 cd c:\Users\satos\japandi-poster-auto-studio
-git remote add origin https://github.com/YOUR_USER/japandi-poster-auto-studio.git
-git add -A
-git commit -m "feat: AI generation APIs and Railway deploy config"
 git push -u origin master
 ```
 
-※ すでに `origin` がある場合は `git remote set-url origin ...` を使ってください。
+※ `wolkjapandi-bot` アカウントで GitHub にログインした状態で実行してください。  
+別アカウント（例: duke24510studio）で push すると 403 になります。
 
 ## 2. Railway でデプロイ
 
