@@ -73,7 +73,34 @@ function CopyBlock({ label, value }: { label: string; value: string }) {
 export default function PosterDetailClient({ theme }: { theme: ThemeWithGenerations }) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
   const latestGen = theme.generations[0] ?? null;
+
+  const runGenerate = async (
+    key: string,
+    url: string,
+    payload: Record<string, string>
+  ) => {
+    setLoading(key);
+    setGenError(null);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGenError(data.error ?? "Generation failed");
+        return;
+      }
+      router.refresh();
+    } catch {
+      setGenError("Network error — check the dev server and try again.");
+    } finally {
+      setLoading(null);
+    }
+  };
 
   const updateGenStatus = async (genId: string, status: string) => {
     setLoading(status);
@@ -179,6 +206,61 @@ export default function PosterDetailClient({ theme }: { theme: ThemeWithGenerati
 
         {/* Right: Generation content */}
         <div className="space-y-6">
+          {/* AI generation */}
+          <div
+            className="p-5 border space-y-4"
+            style={{ backgroundColor: "#ede8dc", borderColor: "#d8d0c0" }}
+          >
+            <p className="text-xs tracking-[0.3em] uppercase opacity-40">AI Generation</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => runGenerate("prompt", "/api/generate/prompt", { themeId: theme.id })}
+                disabled={loading !== null}
+                className="px-4 py-2 text-xs tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-30"
+                style={{ backgroundColor: "#2d5a3d", color: "#f5f0e8" }}
+              >
+                {loading === "prompt" ? "..." : "① Prompt"}
+              </button>
+              <button
+                onClick={() => {
+                  if (!latestGen) {
+                    setGenError("Generate a prompt first.");
+                    return;
+                  }
+                  runGenerate("poster", "/api/generate/poster", { generationId: latestGen.id });
+                }}
+                disabled={loading !== null || !latestGen?.prompt}
+                className="px-4 py-2 text-xs tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-30"
+                style={{ backgroundColor: "#4a7c6f", color: "#f5f0e8" }}
+              >
+                {loading === "poster" ? "..." : "② Image"}
+              </button>
+              <button
+                onClick={() => {
+                  if (!latestGen) {
+                    setGenError("Generate a prompt first.");
+                    return;
+                  }
+                  runGenerate("copy", "/api/generate/copy", { generationId: latestGen.id });
+                }}
+                disabled={loading !== null || !latestGen}
+                className="px-4 py-2 text-xs tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-30"
+                style={{ backgroundColor: "#3a5a8b", color: "#f5f0e8" }}
+              >
+                {loading === "copy" ? "..." : "③ Etsy + SNS"}
+              </button>
+            </div>
+            {genError && (
+              <p className="text-xs" style={{ color: "#8b3a3a" }}>
+                {genError}
+              </p>
+            )}
+            <p className="text-xs opacity-50 leading-relaxed">
+              Requires <code className="opacity-80">OPENAI_API_KEY</code> in .env. Image uses DALL-E 3;
+              copy uses GPT-4o. Each step updates status automatically.
+            </p>
+          </div>
+
           {/* Actions */}
           {latestGen ? (
             <div
