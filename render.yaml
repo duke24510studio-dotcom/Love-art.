@@ -4,13 +4,16 @@ databases:
     plan: free
     databaseName: japandi
     user: japandi
+    # Free-plan services can only reach a database in the same region.
+    # The existing DB was created in Oregon, so keep both here.
+    region: oregon
 
 services:
   - type: web
     name: japandi-poster-studio
     runtime: node
     plan: free
-    region: singapore
+    region: oregon
     repo: https://github.com/duke24510studio-dotcom/Love-art.
     branch: main
     # Migrations must run at start time: Render's build environment has no
