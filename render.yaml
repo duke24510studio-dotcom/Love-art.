@@ -16,7 +16,9 @@ services:
     # Migrations must run at start time: Render's build environment has no
     # network access to the private database, so `prisma migrate deploy`
     # always fails with P1001 when placed in buildCommand.
-    buildCommand: npm ci && npm run build
+    # --include=dev: NODE_ENV=production makes npm omit devDependencies,
+    # but the build needs tailwind/postcss/typescript from devDependencies.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npx prisma migrate deploy && npm start
     healthCheckPath: /
     envVars:
