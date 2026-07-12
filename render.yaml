@@ -13,8 +13,11 @@ services:
     region: singapore
     repo: https://github.com/duke24510studio-dotcom/Love-art.
     branch: main
-    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run build
-    startCommand: npm start
+    # Migrations must run at start time: Render's build environment has no
+    # network access to the private database, so `prisma migrate deploy`
+    # always fails with P1001 when placed in buildCommand.
+    buildCommand: npm ci && npm run build
+    startCommand: npx prisma migrate deploy && npm start
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
