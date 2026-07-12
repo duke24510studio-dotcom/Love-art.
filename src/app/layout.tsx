@@ -36,6 +36,9 @@ export default function RootLayout({
               <Link href="/posters" className="hover:opacity-70 transition-opacity uppercase font-light">
                 Posters
               </Link>
+              <Link href="/youtube-multiview" className="hover:opacity-70 transition-opacity uppercase font-light">
+                Multiview
+              </Link>
               <Link
                 href="/posters/new"
                 style={{ backgroundColor: "#f5f0e8", color: "#2d5a3d" }}
