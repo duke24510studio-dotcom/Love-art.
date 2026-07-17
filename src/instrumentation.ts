@@ -8,4 +8,11 @@ export async function register() {
   } catch (err) {
     console.error("[seed] startup seed failed:", err);
   }
+
+  try {
+    const { seedFeedsIfEmpty } = await import("@/lib/seed-feeds");
+    await seedFeedsIfEmpty();
+  } catch (err) {
+    console.error("[seed] startup feed seed failed:", err);
+  }
 }
