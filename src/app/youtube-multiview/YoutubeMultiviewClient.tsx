@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 type Video = { id: string };
 
 const STORAGE_KEY = "youtube-multiview:videos";
-const COLUMN_PRESETS = [0, 1, 2, 3, 4, 6] as const;
+const COLUMN_PRESETS = [0, 1, 2, 3, 4, 6, 8] as const;
 
 function extractVideoId(raw: string): string | null {
   const trimmed = raw.trim();
@@ -137,7 +137,7 @@ export default function YoutubeMultiviewClient() {
 
   const gridStyle = useMemo(
     () => ({
-      gridTemplateColumns: columns === 0 ? "repeat(auto-fit, minmax(340px, 1fr))" : `repeat(${columns}, 1fr)`,
+      gridTemplateColumns: columns === 0 ? "repeat(auto-fit, minmax(280px, 1fr))" : `repeat(${columns}, 1fr)`,
     }),
     [columns]
   );
