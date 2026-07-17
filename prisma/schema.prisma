@@ -44,3 +44,61 @@ model PosterGeneration {
 
   theme PosterTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
 }
+
+// --- Article pipeline (Medium <-> note original-article studio) ---
+
+// RSS/Atom feeds polled for trends. Used for inspiration only, never reposted.
+model FeedSource {
+  id            String    @id @default(cuid())
+  name          String
+  feedUrl       String    @unique
+  // "en2ja" (Medium EN -> note JA) or "ja2en" (note/JP -> Medium EN)
+  direction     String
+  category      String    @default("")
+  active        Boolean   @default(true)
+  lastFetchedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  items ResearchItem[]
+}
+
+// A trend item collected from a feed. Inspiration source; body is NOT stored.
+model ResearchItem {
+  id          String    @id @default(cuid())
+  feedId      String?
+  direction   String
+  category    String    @default("")
+  title       String
+  url         String    @unique
+  summary     String    @default("")
+  author      String    @default("")
+  publishedAt DateTime?
+  used        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  feed     FeedSource? @relation(fields: [feedId], references: [id], onDelete: SetNull)
+  articles Article[]
+}
+
+// A generated ORIGINAL draft. Never a copy/translation of a source article.
+model Article {
+  id             String   @id @default(cuid())
+  researchItemId String?
+  direction      String
+  category       String   @default("")
+  // Output language: "ja" (note) or "en" (medium)
+  language       String
+  targetPlatform String   @default("")
+  topic          String   @default("")
+  title          String   @default("")
+  subtitle       String   @default("")
+  body           String   @default("")
+  tags           String   @default("")
+  model          String   @default("")
+  status         String   @default("generated")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  researchItem ResearchItem? @relation(fields: [researchItemId], references: [id], onDelete: SetNull)
+}

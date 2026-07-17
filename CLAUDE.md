@@ -126,6 +126,17 @@ Do not use living artists' names.
 Do not imitate a specific Etsy seller.
 Do not include trademarked characters or logos.
 
+## Article Pipeline (Medium <-> note draft studio)
+
+See docs/ARTICLE_PIPELINE.md for full design.
+
+- Collects trends from public RSS feeds (Medium tags, Google News JP) as INSPIRATION ONLY
+- Generates COMPLETELY ORIGINAL drafts via OpenAI — never translates or reproduces source articles (copyright + platform ToS)
+- Two directions: en2ja (original JA articles for note), ja2en (original EN articles for Medium)
+- Publishing is manual after human review at /articles — no auto-posting (note has no public API; Medium's is closed)
+- External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it every 3 hours
+- Article status flow: generated → review → approved → published / rejected
+
 ## Future TODOs (not in MVP)
 
 - POST /api/generate/prompt — build prompt from theme, save to PosterGeneration

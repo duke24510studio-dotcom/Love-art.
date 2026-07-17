@@ -1,0 +1,48 @@
+name: Article Pipeline
+
+# Hits the deployed app's research+draft pipeline every 3 hours.
+# Drafts only — publishing stays human-reviewed (see docs/ARTICLE_PIPELINE.md).
+#
+# Required repository secrets:
+#   APP_URL      e.g. https://japandi-poster-studio.onrender.com (no trailing slash)
+#   CRON_SECRET  same value as the CRON_SECRET env var on the server
+
+on:
+  schedule:
+    - cron: "0 */3 * * *" # every 3 hours (UTC)
+  workflow_dispatch:
+    inputs:
+      direction:
+        description: "en2ja, ja2en, or empty for both"
+        required: false
+        default: ""
+      count:
+        description: "drafts per direction (1-3)"
+        required: false
+        default: "1"
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger pipeline
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DIRECTION: ${{ inputs.direction }}
+          COUNT: ${{ inputs.count || '1' }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL / CRON_SECRET secrets are not set; skipping."
+            exit 0
+          fi
+          body="{\"count\": ${COUNT}"
+          if [ -n "$DIRECTION" ]; then
+            body="${body}, \"direction\": \"${DIRECTION}\""
+          fi
+          body="${body}}"
+          echo "POST ${APP_URL}/api/cron/pipeline ${body}"
+          curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/pipeline" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d "${body}"
