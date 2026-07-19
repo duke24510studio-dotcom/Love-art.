@@ -81,6 +81,55 @@ model ResearchItem {
   articles Article[]
 }
 
+// --- Video pipeline (Japandi faceless YouTube studio) ---
+
+// One faceless YouTube video project: script -> narration -> visuals -> assembly.
+// Everything is generated as a DRAFT; uploading to YouTube stays manual.
+model VideoProject {
+  id                String   @id @default(cuid())
+  // Content pillar, e.g. "morning-routine", "kitchen", "wabi-sabi"
+  pillar            String
+  topic             String
+  language          String   @default("en")
+  targetAudience    String   @default("US/UK/CA/AU viewers aged 30-50")
+  durationTargetMin Int      @default(10)
+  voice             String   @default("onyx")
+  hook              String   @default("")
+  title             String   @default("")
+  description       String   @default("")
+  tags              String   @default("")
+  thumbnailText     String   @default("")
+  thumbnailPrompt   String   @default("")
+  thumbnailPath     String   @default("")
+  videoPath         String   @default("")
+  model             String   @default("")
+  // idea -> scripted -> voiced -> visualized -> assembled -> review -> approved -> exported / rejected
+  status            String   @default("idea")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  scenes VideoScene[]
+}
+
+// One scene of a video: a narration paragraph plus its visual and audio assets.
+model VideoScene {
+  id           String   @id @default(cuid())
+  projectId    String
+  order        Int
+  heading      String   @default("")
+  narration    String   @default("")
+  visualPrompt String   @default("")
+  imagePath    String   @default("")
+  audioPath    String   @default("")
+  durationSec  Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  project VideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, order])
+}
+
 // A generated ORIGINAL draft. Never a copy/translation of a source article.
 model Article {
   id             String   @id @default(cuid())

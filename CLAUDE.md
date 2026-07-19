@@ -137,6 +137,18 @@ See docs/ARTICLE_PIPELINE.md for full design.
 - External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it every 3 hours
 - Article status flow: generated → review → approved → published / rejected
 
+## Video Pipeline (Japandi faceless YouTube studio)
+
+See docs/VIDEO_PIPELINE.md for full design.
+
+- Generates faceless YouTube video drafts about Japanese lifestyle wisdom (Japandi, wabi-sabi, Zen habits, minimalism) for Western viewers aged 30-50
+- 4 steps: script (OpenAI chat) → narration (OpenAI TTS) → scene visuals (DALL-E 3) → MP4 assembly (ffmpeg, optional)
+- Scripts must be completely original, culturally accurate, respectful — no stereotypes, no invented facts, no medical advice
+- Uploading to YouTube is manual after human review at /videos — no auto-publish
+- Assets live under outputs/videos/{projectId}/; export as ZIP for manual editing (BGM, thumbnail text)
+- External cron hits POST /api/cron/video-pipeline (Bearer CRON_SECRET); mode "script" (cheap) or "full"
+- Video status flow: idea → scripted → voiced → visualized → assembled → review → approved → exported / rejected
+
 ## Future TODOs (not in MVP)
 
 - POST /api/generate/prompt — build prompt from theme, save to PosterGeneration
