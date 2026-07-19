@@ -1,0 +1,52 @@
+name: Video Pipeline
+
+# Generates one faceless-video SCRIPT draft every morning (06:00 JST).
+# Script mode only — voice/visuals/assembly are run manually from /videos
+# after human review, so only approved scripts spend image/TTS budget
+# (see docs/VIDEO_PIPELINE.md).
+#
+# Required repository secrets (shared with article-pipeline.yml):
+#   APP_URL      e.g. https://japandi-poster-studio.onrender.com (no trailing slash)
+#   CRON_SECRET  same value as the CRON_SECRET env var on the server
+
+on:
+  schedule:
+    - cron: "0 21 * * *" # 21:00 UTC = 06:00 JST next morning
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "script (cheap, default) or full (script+voice+visuals+mp4)"
+        required: false
+        default: "script"
+      topic:
+        description: "optional topic; empty = auto-pick from the topic bank"
+        required: false
+        default: ""
+      pillar:
+        description: "optional content pillar id (e.g. wabi-sabi, kitchen)"
+        required: false
+        default: ""
+
+jobs:
+  run-video-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger video pipeline
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          MODE: ${{ inputs.mode || 'script' }}
+          TOPIC: ${{ inputs.topic }}
+          PILLAR: ${{ inputs.pillar }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL / CRON_SECRET secrets are not set; skipping."
+            exit 0
+          fi
+          body=$(jq -n --arg mode "$MODE" --arg topic "$TOPIC" --arg pillar "$PILLAR" \
+            '{mode: $mode} + (if $topic != "" then {topic: $topic} else {} end) + (if $pillar != "" then {pillar: $pillar} else {} end)')
+          echo "POST ${APP_URL}/api/cron/video-pipeline ${body}"
+          curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/video-pipeline" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d "${body}"
