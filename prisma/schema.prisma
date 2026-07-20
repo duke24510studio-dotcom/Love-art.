@@ -81,6 +81,46 @@ model ResearchItem {
   articles Article[]
 }
 
+// --- YouTube trend research (see docs/YOUTUBE_RESEARCH.md) ---
+
+// A YouTube video discovered via keyword research.
+// viewCount/likeCount/commentCount mirror the most recent snapshot.
+model YoutubeVideo {
+  id            String    @id @default(cuid())
+  videoId       String    @unique
+  title         String
+  channelId     String    @default("")
+  channelTitle  String    @default("")
+  thumbnailUrl  String    @default("")
+  durationSec   Int       @default(0)
+  publishedAt   DateTime
+  query         String    @default("")
+  viewCount     BigInt    @default(0)
+  likeCount     BigInt    @default(0)
+  commentCount  BigInt    @default(0)
+  tracked       Boolean   @default(true)
+  lastCheckedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  snapshots YoutubeStatSnapshot[]
+}
+
+// Point-in-time stats, so growth speed ("views gained in the last day")
+// can be computed by diffing snapshots — not just the current totals.
+model YoutubeStatSnapshot {
+  id             String   @id @default(cuid())
+  youtubeVideoId String
+  viewCount      BigInt   @default(0)
+  likeCount      BigInt   @default(0)
+  commentCount   BigInt   @default(0)
+  capturedAt     DateTime @default(now())
+
+  video YoutubeVideo @relation(fields: [youtubeVideoId], references: [id], onDelete: Cascade)
+
+  @@index([youtubeVideoId, capturedAt])
+}
+
 // A generated ORIGINAL draft. Never a copy/translation of a source article.
 model Article {
   id             String   @id @default(cuid())

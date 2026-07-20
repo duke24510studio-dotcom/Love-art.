@@ -137,6 +137,15 @@ See docs/ARTICLE_PIPELINE.md for full design.
 - External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it every 3 hours
 - Article status flow: generated → review → approved → published / rejected
 
+## YouTube Trend Research (/youtube-research)
+
+See docs/YOUTUBE_RESEARCH.md for full design.
+
+- Keyword search via YouTube Data API v3 (requires YOUTUBE_API_KEY; search.list = 100 quota units of the free 10k/day)
+- Filters: upload window, exclude Shorts (<= 3 min), region; rank by views / like rate / views-per-day / 24h growth
+- Found videos are saved (YoutubeVideo) and stat-snapshotted (YoutubeStatSnapshot) so "views gained in the last day" (growth speed) can be computed, not just totals
+- POST /api/cron/youtube (Bearer CRON_SECRET) refreshes tracked videos; GitHub Actions workflow runs it every 6 hours
+
 ## Future TODOs (not in MVP)
 
 - POST /api/generate/prompt — build prompt from theme, save to PosterGeneration
