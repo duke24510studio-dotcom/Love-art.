@@ -1,9 +1,12 @@
 name: Article Pipeline
 
 # Hits the deployed app's research+draft pipeline once a day.
-# Default: 1 original Japanese draft for note (direction en2ja) => ~7 per week,
-# matching the weekly-review + note scheduled-publishing workflow.
-# Drafts only — publishing stays human-reviewed (see docs/ARTICLE_PIPELINE.md).
+# Default: 1 original Japanese draft for EACH note brand =>
+#   en2ja     -> ランタンノート (global trends x Zen life-coach)
+#   stillflow -> still flow / 円相 (Zen x Western philosophy essays)
+# ~7 drafts per brand per week, matching the weekly-review + note
+# scheduled-publishing workflow. Drafts only — publishing stays
+# human-reviewed (see docs/ARTICLE_PIPELINE.md).
 #
 # Required repository secrets:
 #   APP_URL      e.g. https://japandi-poster-studio.onrender.com (no trailing slash)
@@ -15,9 +18,9 @@ on:
   workflow_dispatch:
     inputs:
       direction:
-        description: "en2ja (note), ja2en (Medium), or empty for both"
+        description: "en2ja, stillflow, ja2en — or empty for both note brands"
         required: false
-        default: "en2ja"
+        default: ""
       count:
         description: "drafts per direction (1-5)"
         required: false
@@ -31,21 +34,29 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          # Scheduled runs have no inputs, so fall back to the note-only default.
-          DIRECTION: ${{ inputs.direction || 'en2ja' }}
+          # Empty (scheduled runs, or blank manual input) => both note brands.
+          DIRECTION: ${{ inputs.direction }}
           COUNT: ${{ inputs.count || '1' }}
         run: |
           if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
             echo "APP_URL / CRON_SECRET secrets are not set; skipping."
             exit 0
           fi
-          body="{\"count\": ${COUNT}"
+
           if [ -n "$DIRECTION" ]; then
-            body="${body}, \"direction\": \"${DIRECTION}\""
+            directions="$DIRECTION"
+          else
+            directions="en2ja stillflow"
           fi
-          body="${body}}"
-          echo "POST ${APP_URL}/api/cron/pipeline ${body}"
-          curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/pipeline" \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Content-Type: application/json" \
-            -d "${body}"
+
+          status=0
+          for dir in $directions; do
+            body="{\"count\": ${COUNT}, \"direction\": \"${dir}\"}"
+            echo "POST ${APP_URL}/api/cron/pipeline ${body}"
+            curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/pipeline" \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -H "Content-Type: application/json" \
+              -d "${body}" || status=1
+            echo
+          done
+          exit $status

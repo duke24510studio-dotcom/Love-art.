@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { collectResearch } from "@/lib/research";
-import type { ArticleDirection } from "@/lib/article";
+import { isArticleDirection } from "@/lib/article";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -23,11 +23,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const direction = body.direction as ArticleDirection | undefined;
+    const direction = body.direction;
 
-    if (direction && direction !== "en2ja" && direction !== "ja2en") {
+    if (direction !== undefined && !isArticleDirection(direction)) {
       return NextResponse.json(
-        { error: "direction must be 'en2ja' or 'ja2en'" },
+        { error: "direction must be 'en2ja', 'ja2en', or 'stillflow'" },
         { status: 400 }
       );
     }
