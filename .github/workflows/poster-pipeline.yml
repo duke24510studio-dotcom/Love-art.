@@ -1,0 +1,40 @@
+name: Poster Pipeline
+
+# Generates original Hokusai-style aizuri-e (indigo ukiyo-e) poster images
+# once a day (default 3). Images only — approval/export stays human-reviewed
+# at /posters. See docs/ARTICLE_PIPELINE.md for the shared cron/secret setup.
+#
+# Required repository secrets:
+#   APP_URL      e.g. https://japandi-poster-studio.onrender.com (no trailing slash)
+#   CRON_SECRET  same value as the CRON_SECRET env var on the server
+
+on:
+  schedule:
+    - cron: "15 0 * * *" # daily at 00:15 UTC (09:15 JST), staggered after articles
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "posters to generate (1-6)"
+        required: false
+        default: "3"
+
+jobs:
+  run-posters:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger poster pipeline
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          COUNT: ${{ inputs.count || '3' }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL / CRON_SECRET secrets are not set; skipping."
+            exit 0
+          fi
+          body="{\"count\": ${COUNT}}"
+          echo "POST ${APP_URL}/api/cron/posters ${body}"
+          curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/posters" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d "${body}"

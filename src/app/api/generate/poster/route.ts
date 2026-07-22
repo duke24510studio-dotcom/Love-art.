@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { prisma } from "@/lib/prisma";
-import { getGenerationWithTheme, syncThemeStatus } from "@/lib/generation";
-import { getOpenAIClient, getOutputImagesDir } from "@/lib/openai";
+import { getGenerationWithTheme } from "@/lib/generation";
+import { renderPosterImage } from "@/lib/poster-image";
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,48 +21,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const openai = getOpenAIClient();
-    const result = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: generation.prompt,
-      n: 1,
-      size: "1024x1792",
-      quality: "hd",
-      response_format: "url",
-    });
-
-    const imageUrl = result.data?.[0]?.url;
-    if (!imageUrl) {
-      return NextResponse.json({ error: "No image URL returned from OpenAI" }, { status: 502 });
-    }
-
-    const imageRes = await fetch(imageUrl);
-    if (!imageRes.ok) {
-      return NextResponse.json({ error: "Failed to download generated image" }, { status: 502 });
-    }
-
-    const imagesDir = path.resolve(process.cwd(), getOutputImagesDir());
-    fs.mkdirSync(imagesDir, { recursive: true });
-
-    const filename = `${generationId}.png`;
-    const absPath = path.join(imagesDir, filename);
-    const buffer = Buffer.from(await imageRes.arrayBuffer());
-    fs.writeFileSync(absPath, buffer);
-
-    const imagePath = path.join(getOutputImagesDir(), filename).replace(/\\/g, "/");
-
-    const updated = await prisma.posterGeneration.update({
-      where: { id: generationId },
-      data: {
-        imagePath,
-        imageUrl,
-        status: "generated",
-      },
-    });
-
-    await syncThemeStatus(generation.themeId, "generated");
-
-    return NextResponse.json({ generation: updated, imagePath });
+    const updated = await renderPosterImage(generation);
+    return NextResponse.json({ generation: updated, imagePath: updated.imagePath });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Poster generation failed";
     const status = message.includes("OPENAI_API_KEY") ? 503 : 500;

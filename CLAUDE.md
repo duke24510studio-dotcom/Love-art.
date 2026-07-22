@@ -137,6 +137,14 @@ See docs/ARTICLE_PIPELINE.md for full design.
 - External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it daily (4 en2ja drafts for note)
 - Article status flow: generated → review → approved → published / rejected
 
+## Poster Pipeline (Hokusai aizuri-e auto-generation)
+
+- Daily cron generates original Hokusai-style aizuri-e (indigo ukiyo-e) poster images (default 3)
+- POST /api/cron/posters (Bearer CRON_SECRET); GitHub Actions workflow runs it daily at 00:15 UTC
+- Image model configurable via POSTER_IMAGE_MODEL (default gpt-image-1; dall-e-3 fallback), quality via POSTER_IMAGE_QUALITY
+- Themes/prompts in src/lib/hokusai.ts (original compositions only, no reproduction of existing prints); image render shared via src/lib/poster-image.ts
+- Images only — approval/export stays human-reviewed at /posters
+
 ## Future TODOs (not in MVP)
 
 - POST /api/generate/prompt — build prompt from theme, save to PosterGeneration
