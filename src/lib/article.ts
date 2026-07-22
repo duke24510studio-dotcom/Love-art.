@@ -6,9 +6,10 @@ import type { Article, ResearchItem } from "@/generated/prisma/client";
 //   en2ja     -> note "ランタンノート" (global trends x Zen life-coach)
 //   ja2en     -> Medium (Japanese culture for international readers)
 //   stillflow -> note "still flow / 円相" (Zen x Western philosophy essays)
-export type ArticleDirection = "en2ja" | "ja2en" | "stillflow";
+//   econ      -> note (behavioral economics / marketing / overseas business practices, explained plainly)
+export type ArticleDirection = "en2ja" | "ja2en" | "stillflow" | "econ";
 
-export const ARTICLE_DIRECTIONS: ArticleDirection[] = ["en2ja", "ja2en", "stillflow"];
+export const ARTICLE_DIRECTIONS: ArticleDirection[] = ["en2ja", "ja2en", "stillflow", "econ"];
 
 export function isArticleDirection(value: unknown): value is ArticleDirection {
   return typeof value === "string" && (ARTICLE_DIRECTIONS as string[]).includes(value);
@@ -46,6 +47,12 @@ export const FALLBACK_TOPICS: Record<ArticleDirection, { topic: string; category
     { topic: "ストア派の「コントロールの二分法」と、禅の「手放す」", category: "stoicism" },
     { topic: "円相(enso)が語る、完全と未完のあいだ", category: "zen" },
     { topic: "一期一会と、カミュの不条理への向き合い方", category: "philosophy" },
+  ],
+  econ: [
+    { topic: "「アンカリング効果」を知ると、値段の見え方が変わる", category: "behavioral-economics" },
+    { topic: "海外のビジネスパーソンが徹底する「1on1」の使い方", category: "business-culture" },
+    { topic: "「サンクコスト」に引きずられない、やめる判断の技術", category: "behavioral-economics" },
+    { topic: "マーケティングの基本「STP」を、身近な例で理解する", category: "marketing" },
   ],
 };
 
@@ -113,6 +120,28 @@ Respond with valid JSON only, no markdown fences:
   "tags": "5-8 comma-separated Japanese note hashtags without #, mixing e.g. 禅, 哲学, エッセイ, 円相, ストア哲学 with the theme"
 }`;
 
+const SYSTEM_ECON = `You are a Japanese writer who publishes original explainer articles on note (note.com) about behavioral economics, everyday economics for working adults, marketing fundamentals, and how businesspeople overseas actually work (meeting habits, feedback culture, decision-making styles, etc.). Your editorial identity: a clear, trustworthy, practical teacher — the OPPOSITE of hype-driven "get rich" info-sellers who use fear or urgency to funnel readers into expensive courses or LINE groups. You never sell anything.
+
+You will be given a trend topic (sometimes with a headline and a short summary collected from public feeds). Use it ONLY as inspiration for the theme.
+
+STRICT RULES:
+- Write a COMPLETELY ORIGINAL article in natural Japanese. Do NOT translate, reproduce, summarize, or closely paraphrase any existing article.
+- Do not mention or link to the source article, its author, or its publication.
+- Structure: open with a small, relatable everyday or workplace scene -> introduce ONE core concept (a behavioral-economics bias, an economics idea, a marketing framework, or an overseas business practice) -> explain it plainly, as if to a curious coworker who has never studied economics or marketing: give the reading in kana for any kanji jargon term, explain it in one or two plain sentences before using it further, and give a small concrete example from daily life or work -> show how it plays out in a Japanese workplace or daily life -> close with ONE concrete, realistic thing the reader can try or watch for this week.
+- Reader level: assume no prior background in economics, finance, or marketing theory. Prefer plain Japanese; unpack every technical term kindly before relying on it.
+- Accuracy: never fabricate statistics, studies, or named researchers. When citing a well-known idea (e.g. loss aversion, anchoring, sunk cost), attribute it generally and cautiously ("行動経済学ではよく〜と言われています") rather than inventing specific study details, numbers, or citations you cannot verify.
+- Tone: warm, clear, encouraging — a knowledgeable senior colleague explaining over coffee, never a guru. No fear-based urgency, no "this one trick", no funneling to any product, course, LINE group, or paid community, no unrealistic income claims.
+- Length: roughly 1500-2200 Japanese characters, in Markdown with section headings.
+- End the body with this exact disclosure line: "${ARTICLE_DISCLOSURE_JA}"
+
+Respond with valid JSON only, no markdown fences:
+{
+  "title": "Japanese title, clear and genuinely useful, max 60 chars — no clickbait, no fear-based hooks",
+  "subtitle": "one-line Japanese subtitle",
+  "body": "full article body in Markdown (Japanese)",
+  "tags": "5-8 comma-separated Japanese note hashtags without #, mixing e.g. 行動経済学, マーケティング, ビジネス, 経済の勉強 with the topic"
+}`;
+
 type ChannelConfig = {
   language: string;
   targetPlatform: string;
@@ -138,6 +167,12 @@ const CHANNELS: Record<ArticleDirection, ChannelConfig> = {
     targetPlatform: "note",
     disclosure: ARTICLE_DISCLOSURE_JA,
     systemPrompt: SYSTEM_STILLFLOW,
+  },
+  econ: {
+    language: "ja",
+    targetPlatform: "note",
+    disclosure: ARTICLE_DISCLOSURE_JA,
+    systemPrompt: SYSTEM_ECON,
   },
 };
 

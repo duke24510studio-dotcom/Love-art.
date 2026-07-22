@@ -4,6 +4,7 @@ name: Article Pipeline
 # Default: 1 original Japanese draft for EACH note brand =>
 #   en2ja     -> ランタンノート (global trends x Zen life-coach)
 #   stillflow -> still flow / 円相 (Zen x Western philosophy essays)
+#   econ      -> behavioral economics / marketing / overseas business practices
 # ~7 drafts per brand per week, matching the weekly-review + note
 # scheduled-publishing workflow. Drafts only — publishing stays
 # human-reviewed (see docs/ARTICLE_PIPELINE.md).
@@ -18,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       direction:
-        description: "en2ja, stillflow, ja2en — or empty for both note brands"
+        description: "en2ja, stillflow, econ, ja2en — or empty for all 3 note brands"
         required: false
         default: ""
       count:
@@ -34,7 +35,7 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          # Empty (scheduled runs, or blank manual input) => both note brands.
+          # Empty (scheduled runs, or blank manual input) => all 3 note brands.
           DIRECTION: ${{ inputs.direction }}
           COUNT: ${{ inputs.count || '1' }}
         run: |
@@ -46,7 +47,7 @@ jobs:
           if [ -n "$DIRECTION" ]; then
             directions="$DIRECTION"
           else
-            directions="en2ja stillflow"
+            directions="en2ja stillflow econ"
           fi
 
           status=0
