@@ -11,7 +11,7 @@ import {
 // (e.g. every 3 hours). Generates DRAFTS only — publishing stays human-reviewed.
 
 const DIRECTIONS: ArticleDirection[] = ["en2ja", "ja2en"];
-const MAX_COUNT = 3;
+const MAX_COUNT = 5;
 
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;

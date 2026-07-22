@@ -134,7 +134,7 @@ See docs/ARTICLE_PIPELINE.md for full design.
 - Generates COMPLETELY ORIGINAL drafts via OpenAI — never translates or reproduces source articles (copyright + platform ToS)
 - Two directions: en2ja (original JA articles for note), ja2en (original EN articles for Medium)
 - Publishing is manual after human review at /articles — no auto-posting (note has no public API; Medium's is closed)
-- External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it every 3 hours
+- External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it daily (4 en2ja drafts for note)
 - Article status flow: generated → review → approved → published / rejected
 
 ## Future TODOs (not in MVP)
