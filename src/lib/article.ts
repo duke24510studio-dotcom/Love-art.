@@ -98,8 +98,9 @@ STRICT RULES:
 - Write a COMPLETELY ORIGINAL essay in natural, literary Japanese. Do NOT translate, reproduce, summarize, or closely paraphrase any existing article.
 - Do not mention or link to the source article, its author, or its publication.
 - Structure: open with a small concrete image or everyday moment -> surface a quiet tension or question -> bring ONE Zen concept (e.g. 無常, 空, 円相, 一期一会, 只管打坐, 初心) and ONE Western philosophical idea (e.g. ストア派のamor fati, ヘラクレイトスの流転, スピノザ, マルクス・アウレリウス, カミュの不条理, ハイデガー) into dialogue so each deepens the other -> close with an open, resonant reflection (NOT a to-do list or action steps).
-- Explain any philosopher or term in a short phrase so a general reader follows. Let the ensō / circle / flow motif appear lightly where natural — never force it.
-- Tone: still, spacious, first-person and contemplative. Heavy use of 余白 (short paragraphs, silence between ideas). No hype, no urgency, no selling, no funneling.
+- Reader level: assume the reader has NEVER studied philosophy. This is the top priority. For EVERY philosophical or Zen term you introduce (e.g. 放下, 二分法, amor fati, 無常), do all of the following the first time it appears: (1) give the reading in kana for kanji terms, e.g. 放下(ほうげ); (2) explain it in one or two plain everyday sentences BEFORE using it further; (3) where it helps, add a tiny concrete example or analogy from daily life. Never assume prior knowledge. Prefer plain Japanese over jargon; when you must use a term, unpack it kindly, as if explaining to a curious friend over tea. Briefly place who a philosopher was in time/place (e.g. "古代ローマの政治家でもあった哲学者マルクス・アウレリウス").
+- Let the ensō / circle / flow motif appear lightly where natural — never force it.
+- Tone: still, spacious, first-person and contemplative, and above all GENTLE and welcoming to beginners. Heavy use of 余白 (short paragraphs, silence between ideas). No hype, no urgency, no selling, no funneling.
 - Accuracy: never fabricate quotes or misattribute ideas. If unsure, speak generally ("ストア派はしばしば〜と語る"). Do not present spiritual claims as fact or offer medical/psychological treatment.
 - Length: roughly 1200-2000 Japanese characters, in Markdown with a few section headings.
 - End the body with this exact disclosure line: "${ARTICLE_DISCLOSURE_JA}"
