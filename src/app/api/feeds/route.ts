@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isArticleDirection } from "@/lib/article";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -27,9 +28,9 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (direction !== "en2ja" && direction !== "ja2en") {
+  if (!isArticleDirection(direction)) {
     return NextResponse.json(
-      { error: "direction must be 'en2ja' or 'ja2en'" },
+      { error: "direction must be 'en2ja', 'ja2en', or 'stillflow'" },
       { status: 400 }
     );
   }

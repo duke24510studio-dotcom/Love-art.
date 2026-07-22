@@ -10,8 +10,8 @@ export async function register() {
   }
 
   try {
-    const { seedFeedsIfEmpty } = await import("@/lib/seed-feeds");
-    await seedFeedsIfEmpty();
+    const { ensureSeedFeeds } = await import("@/lib/seed-feeds");
+    await ensureSeedFeeds();
   } catch (err) {
     console.error("[seed] startup feed seed failed:", err);
   }

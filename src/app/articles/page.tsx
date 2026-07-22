@@ -18,7 +18,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const DIRECTION_LABELS: Record<string, string> = {
-  en2ja: "→ note (JA)",
+  en2ja: "→ note (ランタン)",
+  stillflow: "→ note (still flow)",
   ja2en: "→ Medium (EN)",
 };
 
@@ -61,7 +62,7 @@ export default async function ArticlesPage({
       <div className="flex flex-wrap gap-4 text-xs tracking-widest uppercase">
         <div className="flex gap-2 items-center">
           <span className="opacity-40">Direction:</span>
-          {[undefined, "en2ja", "ja2en"].map((d) => (
+          {[undefined, "en2ja", "stillflow", "ja2en"].map((d) => (
             <Link
               key={d ?? "all"}
               href={filterLink({ direction: d })}

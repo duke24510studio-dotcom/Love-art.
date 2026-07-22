@@ -2,7 +2,17 @@ import { prisma } from "@/lib/prisma";
 import { getOpenAIClient } from "@/lib/openai";
 import type { Article, ResearchItem } from "@/generated/prisma/client";
 
-export type ArticleDirection = "en2ja" | "ja2en";
+// Each "direction" is really a publishing channel with its own editorial voice.
+//   en2ja     -> note "ランタンノート" (global trends x Zen life-coach)
+//   ja2en     -> Medium (Japanese culture for international readers)
+//   stillflow -> note "still flow / 円相" (Zen x Western philosophy essays)
+export type ArticleDirection = "en2ja" | "ja2en" | "stillflow";
+
+export const ARTICLE_DIRECTIONS: ArticleDirection[] = ["en2ja", "ja2en", "stillflow"];
+
+export function isArticleDirection(value: unknown): value is ArticleDirection {
+  return typeof value === "string" && (ARTICLE_DIRECTIONS as string[]).includes(value);
+}
 
 export const ARTICLE_DISCLOSURE_JA =
   "この記事はAIツールの支援を受けて作成し、筆者が内容を確認・編集のうえ公開しています。";
@@ -30,6 +40,12 @@ export const FALLBACK_TOPICS: Record<ArticleDirection, { topic: string; category
     { topic: "The quiet philosophy behind the Japanese tea ceremony", category: "tea" },
     { topic: "How manga culture reflects modern Japanese society", category: "manga" },
     { topic: "Wabi-sabi and the Japanese art of imperfection", category: "culture" },
+  ],
+  stillflow: [
+    { topic: "「無常」とヘラクレイトスの万物流転が出会うとき", category: "philosophy" },
+    { topic: "ストア派の「コントロールの二分法」と、禅の「手放す」", category: "stoicism" },
+    { topic: "円相(enso)が語る、完全と未完のあいだ", category: "zen" },
+    { topic: "一期一会と、カミュの不条理への向き合い方", category: "philosophy" },
   ],
 };
 
@@ -74,6 +90,56 @@ Respond with valid JSON only, no markdown fences:
   "tags": "5 comma-separated Medium topic tags"
 }`;
 
+const SYSTEM_STILLFLOW = `You are a Japanese writer publishing on note (note.com) under a contemplative brand called "still flow", whose symbol is the ensō (円相) — the hand-drawn Zen circle that suggests both wholeness and incompleteness, stillness and flow. Editorial identity: short meditative essays that place an Eastern (Zen) idea and a Western philosophical idea side by side and let them illuminate each other. This is NOT self-help or life-hacks — it is quiet, essayistic philosophy for reflective readers.
+
+You will be given an inspiration topic (sometimes with a headline and short summary from public feeds). Use it ONLY as a seed for the theme.
+
+STRICT RULES:
+- Write a COMPLETELY ORIGINAL essay in natural, literary Japanese. Do NOT translate, reproduce, summarize, or closely paraphrase any existing article.
+- Do not mention or link to the source article, its author, or its publication.
+- Structure: open with a small concrete image or everyday moment -> surface a quiet tension or question -> bring ONE Zen concept (e.g. 無常, 空, 円相, 一期一会, 只管打坐, 初心) and ONE Western philosophical idea (e.g. ストア派のamor fati, ヘラクレイトスの流転, スピノザ, マルクス・アウレリウス, カミュの不条理, ハイデガー) into dialogue so each deepens the other -> close with an open, resonant reflection (NOT a to-do list or action steps).
+- Explain any philosopher or term in a short phrase so a general reader follows. Let the ensō / circle / flow motif appear lightly where natural — never force it.
+- Tone: still, spacious, first-person and contemplative. Heavy use of 余白 (short paragraphs, silence between ideas). No hype, no urgency, no selling, no funneling.
+- Accuracy: never fabricate quotes or misattribute ideas. If unsure, speak generally ("ストア派はしばしば〜と語る"). Do not present spiritual claims as fact or offer medical/psychological treatment.
+- Length: roughly 1200-2000 Japanese characters, in Markdown with a few section headings.
+- End the body with this exact disclosure line: "${ARTICLE_DISCLOSURE_JA}"
+
+Respond with valid JSON only, no markdown fences:
+{
+  "title": "Japanese title, quiet and evocative, max 60 chars — no clickbait",
+  "subtitle": "one-line Japanese subtitle",
+  "body": "full essay body in Markdown (Japanese)",
+  "tags": "5-8 comma-separated Japanese note hashtags without #, mixing e.g. 禅, 哲学, エッセイ, 円相, ストア哲学 with the theme"
+}`;
+
+type ChannelConfig = {
+  language: string;
+  targetPlatform: string;
+  disclosure: string;
+  systemPrompt: string;
+};
+
+const CHANNELS: Record<ArticleDirection, ChannelConfig> = {
+  en2ja: {
+    language: "ja",
+    targetPlatform: "note",
+    disclosure: ARTICLE_DISCLOSURE_JA,
+    systemPrompt: SYSTEM_EN2JA,
+  },
+  ja2en: {
+    language: "en",
+    targetPlatform: "medium",
+    disclosure: ARTICLE_DISCLOSURE_EN,
+    systemPrompt: SYSTEM_JA2EN,
+  },
+  stillflow: {
+    language: "ja",
+    targetPlatform: "note",
+    disclosure: ARTICLE_DISCLOSURE_JA,
+    systemPrompt: SYSTEM_STILLFLOW,
+  },
+};
+
 type ArticlePayload = {
   title: string;
   subtitle: string;
@@ -93,7 +159,7 @@ function parseArticleJson(raw: string): ArticlePayload {
 }
 
 function ensureDisclosure(body: string, direction: ArticleDirection): string {
-  const disclosure = direction === "en2ja" ? ARTICLE_DISCLOSURE_JA : ARTICLE_DISCLOSURE_EN;
+  const disclosure = CHANNELS[direction].disclosure;
   if (body.includes(disclosure)) return body;
   return `${body.trim()}\n\n${disclosure}`;
 }
@@ -127,12 +193,13 @@ export async function generateArticleDraft(input: GenerateArticleInput): Promise
     .filter(Boolean)
     .join("\n");
 
+  const channel = CHANNELS[direction];
   const model = getArticleModel();
   const openai = getOpenAIClient();
   const completion = await openai.chat.completions.create({
     model,
     messages: [
-      { role: "system", content: direction === "en2ja" ? SYSTEM_EN2JA : SYSTEM_JA2EN },
+      { role: "system", content: channel.systemPrompt },
       { role: "user", content: userPrompt },
     ],
     temperature: 0.8,
@@ -150,8 +217,8 @@ export async function generateArticleDraft(input: GenerateArticleInput): Promise
       researchItemId: researchItem?.id ?? null,
       direction,
       category,
-      language: direction === "en2ja" ? "ja" : "en",
-      targetPlatform: direction === "en2ja" ? "note" : "medium",
+      language: channel.language,
+      targetPlatform: channel.targetPlatform,
       topic,
       title: payload.title.trim(),
       subtitle: payload.subtitle.trim(),

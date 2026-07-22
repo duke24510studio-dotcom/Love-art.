@@ -10,7 +10,7 @@ import {
 // Research + draft-generation pipeline, meant to be hit by an external cron
 // (e.g. every 3 hours). Generates DRAFTS only — publishing stays human-reviewed.
 
-const DIRECTIONS: ArticleDirection[] = ["en2ja", "ja2en"];
+const DIRECTIONS: ArticleDirection[] = ["en2ja", "ja2en", "stillflow"];
 const MAX_COUNT = 5;
 
 function isAuthorized(req: NextRequest): boolean {
@@ -66,7 +66,7 @@ async function handle(req: NextRequest, body: Record<string, unknown>) {
   const requested = body.direction as ArticleDirection | undefined;
   if (requested && !DIRECTIONS.includes(requested)) {
     return NextResponse.json(
-      { error: "direction must be 'en2ja' or 'ja2en'" },
+      { error: "direction must be 'en2ja', 'ja2en', or 'stillflow'" },
       { status: 400 }
     );
   }

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
   generateArticleDraft,
+  isArticleDirection,
   pickFallbackTopic,
   pickResearchItem,
-  type ArticleDirection,
 } from "@/lib/article";
 
 export async function GET(req: NextRequest) {
@@ -28,10 +28,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const direction = body.direction as ArticleDirection | undefined;
-    if (direction !== "en2ja" && direction !== "ja2en") {
+    const direction = body.direction;
+    if (!isArticleDirection(direction)) {
       return NextResponse.json(
-        { error: "direction must be 'en2ja' or 'ja2en'" },
+        { error: "direction must be 'en2ja', 'ja2en', or 'stillflow'" },
         { status: 400 }
       );
     }

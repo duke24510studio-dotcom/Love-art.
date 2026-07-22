@@ -65,13 +65,34 @@ export const SEED_FEEDS = [
     direction: "ja2en",
     category: "culture",
   },
+  // stillflow: Western philosophy trends -> original JA essays for note "still flow"
+  {
+    name: "Medium — Philosophy",
+    feedUrl: "https://medium.com/feed/tag/philosophy",
+    direction: "stillflow",
+    category: "philosophy",
+  },
+  {
+    name: "Medium — Stoicism",
+    feedUrl: "https://medium.com/feed/tag/stoicism",
+    direction: "stillflow",
+    category: "stoicism",
+  },
 ] as const;
 
-export async function seedFeedsIfEmpty(): Promise<void> {
-  const count = await prisma.feedSource.count();
-  if (count > 0) return;
-
+/**
+ * Insert any seed feeds that don't exist yet (matched by unique feedUrl).
+ * Idempotent, so new channels added over time are picked up by existing
+ * deployments on the next boot — not only by fresh databases.
+ */
+export async function ensureSeedFeeds(): Promise<void> {
   for (const feed of SEED_FEEDS) {
-    await prisma.feedSource.create({ data: { ...feed } });
+    const exists = await prisma.feedSource.findUnique({
+      where: { feedUrl: feed.feedUrl },
+      select: { id: true },
+    });
+    if (!exists) {
+      await prisma.feedSource.create({ data: { ...feed } });
+    }
   }
 }
