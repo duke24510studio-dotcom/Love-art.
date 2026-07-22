@@ -31,6 +31,12 @@ export async function POST() {
         zip.file(`images/${path.basename(g.imagePath)}`, fileData);
       }
     }
+    if (g.printImagePath) {
+      const absPrint = path.resolve(process.cwd(), g.printImagePath);
+      if (fs.existsSync(absPrint)) {
+        zip.file(`print/${path.basename(g.printImagePath)}`, fs.readFileSync(absPrint));
+      }
+    }
   }
 
   // Per-item text files

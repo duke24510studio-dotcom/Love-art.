@@ -178,6 +178,18 @@ export default function PosterDetailClient({ theme }: { theme: ThemeWithGenerati
             )}
           </div>
 
+          {/* Hi-res print download */}
+          {latestGen?.printImagePath && (
+            <a
+              href={`/outputs/images/${latestGen.printImagePath.split("/").pop()}`}
+              download
+              className="block text-center px-4 py-2 text-xs tracking-widest uppercase transition-opacity hover:opacity-80"
+              style={{ backgroundColor: "#2d5a3d", color: "#f5f0e8" }}
+            >
+              ↓ Download hi-res (print)
+            </a>
+          )}
+
           {/* Theme details */}
           <div
             className="p-5 border space-y-3"

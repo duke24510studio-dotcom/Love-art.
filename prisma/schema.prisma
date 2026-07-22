@@ -29,6 +29,7 @@ model PosterGeneration {
   themeId           String
   prompt            String   @default("")
   imagePath         String   @default("")
+  printImagePath    String   @default("")
   imageUrl          String   @default("")
   qualityScore      Int?
   qualityComment    String   @default("")
