@@ -4,6 +4,7 @@ import type OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
 import { getOpenAIClient, getOutputImagesDir } from "@/lib/openai";
 import { syncThemeStatus } from "@/lib/generation";
+import { upscaleToPrint } from "@/lib/upscale";
 import type { PosterGeneration } from "@/generated/prisma/client";
 
 /** Image model for posters. Default gpt-image-1; override with POSTER_IMAGE_MODEL. */
@@ -76,14 +77,23 @@ export async function renderPosterImage(
   fs.mkdirSync(imagesDir, { recursive: true });
 
   const filename = `${generation.id}.png`;
-  const absPath = path.join(imagesDir, filename);
-  fs.writeFileSync(absPath, buffer);
-
+  fs.writeFileSync(path.join(imagesDir, filename), buffer);
   const imagePath = path.join(getOutputImagesDir(), filename).replace(/\\/g, "/");
+
+  // Print-resolution upscale (best-effort; the preview still works without it).
+  let printImagePath = "";
+  try {
+    const print = await upscaleToPrint(buffer);
+    const printName = `${generation.id}-print.png`;
+    fs.writeFileSync(path.join(imagesDir, printName), print.buffer);
+    printImagePath = path.join(getOutputImagesDir(), printName).replace(/\\/g, "/");
+  } catch (err) {
+    console.error("[poster] print upscale failed:", err);
+  }
 
   const updated = await prisma.posterGeneration.update({
     where: { id: generation.id },
-    data: { imagePath, imageUrl, status: "generated" },
+    data: { imagePath, printImagePath, imageUrl, status: "generated" },
   });
 
   await syncThemeStatus(generation.themeId, "generated");
