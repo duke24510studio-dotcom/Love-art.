@@ -77,18 +77,31 @@ export const HOKUSAI_THEMES = [
   },
 ] as const;
 
+export type PosterOrientation = "portrait" | "landscape";
+
 export function buildHokusaiPrompt(
-  theme: Pick<PosterTheme, "motif" | "verticalTextJa" | "subtitleEn" | "colorPalette">
+  theme: Pick<PosterTheme, "motif" | "verticalTextJa" | "subtitleEn" | "colorPalette">,
+  orientation: PosterOrientation = "portrait"
 ): string {
-  return `Create an ORIGINAL vertical Japanese ukiyo-e style wall art poster in the aizuri-e tradition — an indigo / Prussian-blue monochrome woodblock print in the Edo-period spirit of masters such as Katsushika Hokusai. This must be an entirely original composition, NOT a copy or reproduction of any existing artwork or print.
+  const isLandscape = orientation === "landscape";
+
+  const typographyLine = isLandscape
+    ? "a small, refined Japanese title placed unobtrusively in a corner (not a dominant vertical block), letting the scene breathe across the wide frame"
+    : "bold but tasteful vertical Japanese typography as a major decorative element";
+
+  const compositionLine = isLandscape
+    ? "a wide horizontal 16:9 landscape composition with a strong sense of panoramic depth and horizon — well suited for YouTube thumbnails/banners, e-commerce hero banners, wide wall art, and gallery-style horizontal canvases"
+    : "a vertical 2:3 poster layout with a bold, dynamic ukiyo-e composition, suitable for modern homes, galleries, cafes, tea rooms, and collectors";
+
+  return `Create an ORIGINAL ${isLandscape ? "horizontal (landscape)" : "vertical"} Japanese ukiyo-e style wall art in the aizuri-e tradition — an indigo / Prussian-blue monochrome woodblock print in the Edo-period spirit of masters such as Katsushika Hokusai. This must be an entirely original composition, NOT a copy or reproduction of any existing artwork or print.
 
 Subject: ${theme.motif}
-Japanese vertical title: ${theme.verticalTextJa}
+Japanese title: ${theme.verticalTextJa}
 English subtitle: ${theme.subtitleEn}
 
-Style: traditional ukiyo-e woodblock aesthetic, aizuri-e indigo-blue palette, bold confident flowing linework, stylized waves / clouds / wind / rain patterns, visible woodgrain and hand-printed texture, elegant negative space, a single small red seal stamp as the only warm accent, refined vertical Japanese typography. No brand logos, no copyrighted characters, no reproduction of existing artworks.
+Style: traditional ukiyo-e woodblock aesthetic, aizuri-e indigo-blue palette, bold confident flowing linework, stylized waves / clouds / wind / rain patterns, visible woodgrain and hand-printed texture, elegant negative space, a single small red seal stamp as the only warm accent, ${typographyLine}. No brand logos, no copyrighted characters, no reproduction of existing artworks.
 
-Composition: a vertical 2:3 poster layout with a bold, dynamic ukiyo-e composition, suitable for modern homes, galleries, cafes, tea rooms, and collectors.
+Composition: ${compositionLine}.
 
 Color palette: ${theme.colorPalette}`;
 }

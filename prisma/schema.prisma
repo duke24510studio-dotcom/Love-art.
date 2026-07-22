@@ -27,6 +27,7 @@ model PosterTheme {
 model PosterGeneration {
   id                String   @id @default(cuid())
   themeId           String
+  orientation       String   @default("portrait")
   prompt            String   @default("")
   imagePath         String   @default("")
   printImagePath    String   @default("")

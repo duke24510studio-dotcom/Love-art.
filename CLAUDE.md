@@ -132,16 +132,18 @@ See docs/ARTICLE_PIPELINE.md for full design.
 
 - Collects trends from public RSS feeds (Medium tags, Google News JP) as INSPIRATION ONLY
 - Generates COMPLETELY ORIGINAL drafts via OpenAI — never translates or reproduces source articles (copyright + platform ToS)
-- Two directions: en2ja (original JA articles for note), ja2en (original EN articles for Medium)
+- Channels (direction): en2ja (ランタンノート — global trends x Zen life-coach, note), stillflow (still flow / 円相 — Zen x Western philosophy essays, note), ja2en (Japanese culture for Medium, not on the daily schedule)
 - Publishing is manual after human review at /articles — no auto-posting (note has no public API; Medium's is closed)
-- External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it daily (4 en2ja drafts for note)
+- External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it daily (1 draft each for en2ja + stillflow)
 - Article status flow: generated → review → approved → published / rejected
 
 ## Poster Pipeline (Hokusai aizuri-e auto-generation)
 
 - Daily cron generates original Hokusai-style aizuri-e (indigo ukiyo-e) poster images (default 3)
 - POST /api/cron/posters (Bearer CRON_SECRET); GitHub Actions workflow runs it daily at 00:15 UTC
+- Orientation: "portrait" (2:3 wall art), "landscape" (16:9 — YouTube thumbnails/banners, EC hero images), or "mixed" (default: 1-in-3 landscape)
 - Image model configurable via POSTER_IMAGE_MODEL (default gpt-image-1; dall-e-3 fallback), quality via POSTER_IMAGE_QUALITY
+- Print-resolution upscale (src/lib/upscale.ts, default 4x via sharp) written to PosterGeneration.printImagePath alongside the preview image
 - Themes/prompts in src/lib/hokusai.ts (original compositions only, no reproduction of existing prints); image render shared via src/lib/poster-image.ts
 - Images only — approval/export stays human-reviewed at /posters
 

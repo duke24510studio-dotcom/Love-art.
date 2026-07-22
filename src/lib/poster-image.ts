@@ -12,13 +12,19 @@ export function getPosterImageModel(): string {
   return process.env.POSTER_IMAGE_MODEL || "gpt-image-1";
 }
 
-function buildImageParams(model: string, prompt: string): OpenAI.Images.ImageGenerateParams {
+function buildImageParams(
+  model: string,
+  prompt: string,
+  orientation: string
+): OpenAI.Images.ImageGenerateParams {
+  const landscape = orientation === "landscape";
+
   if (model.startsWith("gpt-image")) {
     return {
       model,
       prompt,
       n: 1,
-      size: "1024x1536", // portrait; gpt-image-1 does not support 1024x1792
+      size: landscape ? "1536x1024" : "1024x1536", // gpt-image-1 does not support 1792 edges
       quality: (process.env.POSTER_IMAGE_QUALITY || "high") as
         OpenAI.Images.ImageGenerateParams["quality"],
     };
@@ -28,7 +34,7 @@ function buildImageParams(model: string, prompt: string): OpenAI.Images.ImageGen
     model,
     prompt,
     n: 1,
-    size: "1024x1792",
+    size: landscape ? "1792x1024" : "1024x1792",
     quality: "hd",
     response_format: "url",
   };
@@ -53,7 +59,7 @@ export async function renderPosterImage(
   const model = getPosterImageModel();
   // Non-streaming call; narrow away the streaming union member.
   const result = (await openai.images.generate(
-    buildImageParams(model, generation.prompt)
+    buildImageParams(model, generation.prompt, generation.orientation)
   )) as OpenAI.Images.ImagesResponse;
 
   const first = result.data?.[0];
