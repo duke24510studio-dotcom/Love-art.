@@ -117,7 +117,9 @@ export default async function PostersPage({
               >
                 {/* Image placeholder */}
                 <div
-                  className="w-full aspect-[2/3] flex items-center justify-center"
+                  className={`w-full flex items-center justify-center ${
+                    latestGen?.orientation === "landscape" ? "aspect-[16/9]" : "aspect-[2/3]"
+                  }`}
                   style={{ backgroundColor: "#d8d0c0" }}
                 >
                   {latestGen?.imagePath ? (

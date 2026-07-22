@@ -138,7 +138,10 @@ export default function PosterDetailClient({ theme }: { theme: ThemeWithGenerati
             <StatusBadge status={latestGen?.status ?? theme.status} />
           </div>
           <p className="text-sm opacity-60 mt-1">{theme.themeEn}</p>
-          <p className="text-xs opacity-40 tracking-widest uppercase mt-1">{theme.collection}</p>
+          <p className="text-xs opacity-40 tracking-widest uppercase mt-1">
+            {theme.collection}
+            {latestGen?.orientation === "landscape" ? " · Landscape (16:9)" : ""}
+          </p>
         </div>
         <button
           onClick={deleteTheme}
@@ -154,7 +157,9 @@ export default function PosterDetailClient({ theme }: { theme: ThemeWithGenerati
         <div className="space-y-6">
           {/* Image */}
           <div
-            className="w-full aspect-[2/3] flex items-center justify-center border"
+            className={`w-full flex items-center justify-center border ${
+              latestGen?.orientation === "landscape" ? "aspect-[16/9]" : "aspect-[2/3]"
+            }`}
             style={{ backgroundColor: "#d8d0c0", borderColor: "#d8d0c0" }}
           >
             {latestGen?.imagePath ? (
