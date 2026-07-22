@@ -1,6 +1,7 @@
 name: Article Pipeline
 
-# Hits the deployed app's research+draft pipeline every 3 hours.
+# Hits the deployed app's research+draft pipeline once a day.
+# Default: 4 original Japanese drafts for note (direction en2ja).
 # Drafts only — publishing stays human-reviewed (see docs/ARTICLE_PIPELINE.md).
 #
 # Required repository secrets:
@@ -9,17 +10,17 @@ name: Article Pipeline
 
 on:
   schedule:
-    - cron: "0 */3 * * *" # every 3 hours (UTC)
+    - cron: "0 0 * * *" # daily at 00:00 UTC (09:00 JST)
   workflow_dispatch:
     inputs:
       direction:
-        description: "en2ja, ja2en, or empty for both"
+        description: "en2ja (note), ja2en (Medium), or empty for both"
         required: false
-        default: ""
+        default: "en2ja"
       count:
-        description: "drafts per direction (1-3)"
+        description: "drafts per direction (1-5)"
         required: false
-        default: "1"
+        default: "4"
 
 jobs:
   run-pipeline:
@@ -29,8 +30,9 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          DIRECTION: ${{ inputs.direction }}
-          COUNT: ${{ inputs.count || '1' }}
+          # Scheduled runs have no inputs, so fall back to the note-only default.
+          DIRECTION: ${{ inputs.direction || 'en2ja' }}
+          COUNT: ${{ inputs.count || '4' }}
         run: |
           if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
             echo "APP_URL / CRON_SECRET secrets are not set; skipping."
