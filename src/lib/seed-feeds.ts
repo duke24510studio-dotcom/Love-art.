@@ -78,6 +78,25 @@ export const SEED_FEEDS = [
     direction: "stillflow",
     category: "stoicism",
   },
+  // econ: behavioral economics / marketing / overseas business practices -> note explainers
+  {
+    name: "Medium — Marketing",
+    feedUrl: "https://medium.com/feed/tag/marketing",
+    direction: "econ",
+    category: "marketing",
+  },
+  {
+    name: "Medium — Economics",
+    feedUrl: "https://medium.com/feed/tag/economics",
+    direction: "econ",
+    category: "behavioral-economics",
+  },
+  {
+    name: "Medium — Leadership",
+    feedUrl: "https://medium.com/feed/tag/leadership",
+    direction: "econ",
+    category: "business-culture",
+  },
 ] as const;
 
 /**

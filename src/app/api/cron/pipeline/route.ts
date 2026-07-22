@@ -10,7 +10,7 @@ import {
 // Research + draft-generation pipeline, meant to be hit by an external cron
 // (e.g. every 3 hours). Generates DRAFTS only — publishing stays human-reviewed.
 
-const DIRECTIONS: ArticleDirection[] = ["en2ja", "ja2en", "stillflow"];
+const DIRECTIONS: ArticleDirection[] = ["en2ja", "ja2en", "stillflow", "econ"];
 const MAX_COUNT = 5;
 
 function isAuthorized(req: NextRequest): boolean {
