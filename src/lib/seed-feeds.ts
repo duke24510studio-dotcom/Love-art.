@@ -28,6 +28,18 @@ export const SEED_FEEDS = [
     direction: "en2ja",
     category: "lifehack",
   },
+  {
+    name: "Medium — Mindfulness",
+    feedUrl: "https://medium.com/feed/tag/mindfulness",
+    direction: "en2ja",
+    category: "mindfulness",
+  },
+  {
+    name: "Medium — Self Improvement",
+    feedUrl: "https://medium.com/feed/tag/self-improvement",
+    direction: "en2ja",
+    category: "mindfulness",
+  },
   // ja2en: Japanese culture trends -> original English articles for Medium
   {
     name: "Google News JP — 禅",
