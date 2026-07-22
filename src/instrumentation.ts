@@ -15,4 +15,11 @@ export async function register() {
   } catch (err) {
     console.error("[seed] startup feed seed failed:", err);
   }
+
+  try {
+    const { ensureHokusaiThemes } = await import("@/lib/hokusai");
+    await ensureHokusaiThemes();
+  } catch (err) {
+    console.error("[seed] startup hokusai seed failed:", err);
+  }
 }
