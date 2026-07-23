@@ -147,6 +147,28 @@ See docs/ARTICLE_PIPELINE.md for full design.
 - Themes/prompts in src/lib/hokusai.ts (original compositions only, no reproduction of existing prints); image render shared via src/lib/poster-image.ts
 - Images only — approval/export stays human-reviewed at /posters
 
+## Rakuten Affiliate Review Pipeline
+
+See docs/RAKUTEN_REVIEW_PIPELINE.md for full design.
+
+- Tracks ONE Rakuten Ichiba product at a time per entry (`RakutenProduct`) — not bulk product
+  scraping. Reviews accumulate weekly as an asset instead of generating many products at once.
+- `POST /api/rakuten/lookup` fetches real product data (name, price, image, catchcopy, review
+  stats) from the official Rakuten Ichiba Item Search API (`RAKUTEN_APP_ID`); `/products/new`
+  previews it before saving.
+- Each week's `ReviewRound` = 5 fixed reviewer-persona write-ups (`src/lib/review-personas.ts`:
+  主婦目線, コスパ重視, ギフト目線, 初心者目線, スペック比較目線) generated in one OpenAI call, plus
+  one AI lifestyle photo made by editing the product's own image (`openai.images.edit`).
+- **Compliance is non-negotiable**: every generated review must end with the exact PR + AI
+  disclosure line (`REVIEW_DISCLOSURE` in `src/lib/review.ts`), must never claim to be a
+  "verified purchaser" or real customer testimonial, must never fabricate specs/statistics/medical
+  claims, and must avoid unqualified superlatives ("Japan's best", "absolutely"). These personas
+  are editorial characters, not real customers — treat this like sponsored content, not astroturf.
+- Weekly cron: `POST /api/cron/rakuten-reviews` (Bearer `CRON_SECRET`); GitHub Actions workflow
+  runs it weekly (Monday). Manual per-product generation via `POST /api/products/[id]/generate`.
+- Review/approve at `/products/[id]`; export approved reviews via `POST /api/export/rakuten-csv`.
+  Posting to SNS/blogs stays entirely manual and human-reviewed — no auto-publish.
+
 ## Future TODOs (not in MVP)
 
 - POST /api/generate/prompt — build prompt from theme, save to PosterGeneration

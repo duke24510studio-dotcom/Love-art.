@@ -1,0 +1,42 @@
+name: Rakuten Review Pipeline
+
+# Weekly: for each tracked Rakuten product with status "active", generate its
+# next weekly review round (5 reviewer-persona write-ups + one AI lifestyle
+# photo). One product accumulates review content steadily over many weeks
+# rather than generating many products at once. Drafts only — approval/
+# export stays human-reviewed at /products. See docs/RAKUTEN_REVIEW_PIPELINE.md.
+#
+# Required repository secrets:
+#   APP_URL      e.g. https://japandi-poster-studio.onrender.com (no trailing slash)
+#   CRON_SECRET  same value as the CRON_SECRET env var on the server
+
+on:
+  schedule:
+    - cron: "30 0 * * 1" # weekly, Monday 00:30 UTC (09:30 JST), staggered after articles/posters
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "active products to advance (1-5)"
+        required: false
+        default: "5"
+
+jobs:
+  run-rakuten-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Rakuten review pipeline
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          COUNT: ${{ inputs.count || '5' }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL / CRON_SECRET secrets are not set; skipping."
+            exit 0
+          fi
+          body="{\"count\": ${COUNT}}"
+          echo "POST ${APP_URL}/api/cron/rakuten-reviews ${body}"
+          curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/rakuten-reviews" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d "${body}"

@@ -39,6 +39,9 @@ export default function RootLayout({
               <Link href="/articles" className="hover:opacity-70 transition-opacity uppercase font-light">
                 Articles
               </Link>
+              <Link href="/products" className="hover:opacity-70 transition-opacity uppercase font-light">
+                Rakuten Reviews
+              </Link>
               <Link href="/youtube-multiview" className="hover:opacity-70 transition-opacity uppercase font-light">
                 Multiview
               </Link>
