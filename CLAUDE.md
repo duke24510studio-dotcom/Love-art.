@@ -186,10 +186,14 @@ See docs/BLOG.md for full design.
   has articles immediately, no manual step required.
 - **The rest of the app (`/`, `/posters`, `/articles`, `/products`, `/youtube-multiview` and their
   APIs) has delete buttons and buttons that trigger paid OpenAI calls — it must never be publicly
-  reachable without credentials.** `src/middleware.ts` Basic-Auth-protects everything except
+  reachable without credentials.** `src/proxy.ts` Basic-Auth-protects everything except
   `/blog`, `/api/static`, `/outputs`; in production it 503s the admin tool if
   `ADMIN_BASIC_USER`/`ADMIN_BASIC_PASS` aren't set, rather than leaving it open.
 - `render.yaml` `healthCheckPath` is `/blog` (not `/`, which is auth-protected).
+- Content is managed from the admin-side CMS at `/blog-posts` (list/new/edit/publish/delete,
+  `src/app/api/blog/`) — deliberately a different path from the public `/blog` to avoid a route
+  collision. The CMS does not auto-enforce the content policy above (no auto PR/AI-disclosure
+  injection) — review each post against it before publishing.
 
 ## Future TODOs (not in MVP)
 
