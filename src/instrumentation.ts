@@ -22,4 +22,11 @@ export async function register() {
   } catch (err) {
     console.error("[seed] startup hokusai seed failed:", err);
   }
+
+  try {
+    const { seedBlogIfEmpty } = await import("@/lib/blog");
+    await seedBlogIfEmpty();
+  } catch (err) {
+    console.error("[seed] startup blog seed failed:", err);
+  }
 }

@@ -169,3 +169,21 @@ model ProductReview {
 
   round ReviewRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
 }
+
+// --- Public blog ("茶と暮らしの手帖") ---
+// Original, editorial buying-guide articles shown at /blog with no admin
+// controls — the public-facing site content required to register for
+// affiliate programs (e.g. Rakuten Affiliate) before an affiliate ID exists.
+// Not the same as Article (note/Medium drafts) or ProductReview (persona
+// reviews of one tracked product) — this is the site's own genuine content.
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String   @default("")
+  body        String
+  category    String   @default("")
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
