@@ -169,6 +169,28 @@ See docs/RAKUTEN_REVIEW_PIPELINE.md for full design.
 - Review/approve at `/products/[id]`; export approved reviews via `POST /api/export/rakuten-csv`.
   Posting to SNS/blogs stays entirely manual and human-reviewed — no auto-publish.
 
+## Public Blog (`/blog`) + Admin Auth Boundary
+
+See docs/BLOG.md for full design.
+
+- `/blog` is the ONLY public, unauthenticated part of this app — a small original buying-guide
+  blog ("茶と暮らしの手帖", tea & food-gift genre) whose purpose is to give affiliate-program
+  applications (e.g. Rakuten Affiliate) a real, substantive site URL to submit for review.
+- `BlogPost` is a separate model from `Article` (external-platform drafts) and `ProductReview`
+  (persona reviews of one tracked product) — it's genuine editorial content, not a product pitch,
+  so it stays honest even before any affiliate ID exists. Every post ends with an AI-disclosure
+  line (`BLOG_DISCLOSURE_JA` in `src/lib/blog.ts`) and avoids gambling/dating/adult/spiritual/
+  night-work topics (common affiliate-program prohibited genres).
+- Seed content lives in `src/lib/blog.ts` (`SEED_BLOG_POSTS`) and auto-seeds on first server
+  startup via `src/instrumentation.ts` (same pattern as poster themes) — a fresh Render deploy
+  has articles immediately, no manual step required.
+- **The rest of the app (`/`, `/posters`, `/articles`, `/products`, `/youtube-multiview` and their
+  APIs) has delete buttons and buttons that trigger paid OpenAI calls — it must never be publicly
+  reachable without credentials.** `src/middleware.ts` Basic-Auth-protects everything except
+  `/blog`, `/api/static`, `/outputs`; in production it 503s the admin tool if
+  `ADMIN_BASIC_USER`/`ADMIN_BASIC_PASS` aren't set, rather than leaving it open.
+- `render.yaml` `healthCheckPath` is `/blog` (not `/`, which is auth-protected).
+
 ## Future TODOs (not in MVP)
 
 - POST /api/generate/prompt — build prompt from theme, save to PosterGeneration

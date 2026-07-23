@@ -39,17 +39,25 @@ DATABASE_URL="file:./dev.db"
 OUTPUT_DIR="./outputs"
 ```
 
+公開環境（本番）では、管理画面（`/`, `/posters`, `/articles`, `/products` 等。削除ボタンや
+課金の発生するAI生成ボタンがある）を保護するため `ADMIN_BASIC_USER` / `ADMIN_BASIC_PASS` も
+設定してください。未設定のまま本番公開すると、管理画面は開放されるのではなく503で塞がります
+（`/blog` は認証なしで常に公開されます）。詳細は [docs/BLOG.md](./docs/BLOG.md) 参照。
+
 ### 3. DB マイグレーション
 
 ```bash
 npx prisma migrate dev
 ```
 
-### 4. シードデータ投入（20テーマ）
+### 4. シードデータ投入（20テーマ・ブログ記事5本）
 
 ```bash
 npm run seed
+npm run seed:blog
 ```
+
+（本番デプロイ時は初回起動時に自動投入されるため、通常この手順は不要です）
 
 ### 5. 開発サーバー起動
 
@@ -63,12 +71,16 @@ npm run dev
 
 ## ページ構成
 
-| URL | 説明 |
-|-----|------|
-| `/` | ダッシュボード |
-| `/posters` | ポスター一覧 |
-| `/posters/new` | 新規テーマ登録 |
-| `/posters/[id]` | 詳細・レビュー・AI生成 |
+| URL | 説明 | 公開範囲 |
+|-----|------|----------|
+| `/blog` | 公開ブログ「茶と暮らしの手帖」記事一覧 | **認証なし・常時公開** |
+| `/blog/[slug]` | 記事詳細 | **認証なし・常時公開** |
+| `/blog/about` | このサイトについて（運営者情報・AI開示） | **認証なし・常時公開** |
+| `/` | ダッシュボード | Basic認証（管理画面） |
+| `/posters` | ポスター一覧 | Basic認証（管理画面） |
+| `/posters/new` | 新規テーマ登録 | Basic認証（管理画面） |
+| `/posters/[id]` | 詳細・レビュー・AI生成 | Basic認証（管理画面） |
+| `/articles`, `/products`, `/youtube-multiview` | 記事・楽天レビュー・マルチビュー管理 | Basic認証（管理画面） |
 
 ---
 

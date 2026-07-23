@@ -35,6 +35,24 @@ RENDER_SERVICE_NAME=japandi-poster-studio
 1. **[Render でデプロイ](https://render.com/deploy?repo=https://github.com/duke24510studio-dotcom/Love-art.)** を開く  
 2. GitHub 連携 → **Apply**  
 3. 上の `npm run setup:openai` でキーを用意（Render 画面で聞かれたら同じ `sk-...` を貼る）  
-4. デプロイ完了後 URL を開く → `/posters`
+4. デプロイ完了後 URL を開く → `/posters`（管理画面）または `/blog`（公開ブログ）
 
-初回は **20テーマが自動投入** されます。
+初回は **20テーマ・公開ブログ記事5本が自動投入** されます。
+
+---
+
+## 公開ブログと管理画面の分離（重要）
+
+`/blog` は認証なしで公開される唯一のページです（アフィリエイトプログラム審査用の
+サイトURLとして使う想定）。それ以外（`/`, `/posters`, `/articles`, `/products` 等）は
+削除ボタンや課金の発生するAI生成ボタンがあるため、Basic認証で保護されます。
+
+Render の Environment で以下を設定してください（未設定だと管理画面は503のまま。
+`/blog` には影響しません）：
+
+```env
+ADMIN_BASIC_USER=お好きなユーザー名
+ADMIN_BASIC_PASS=お好きなパスワード
+```
+
+詳細は [docs/BLOG.md](./docs/BLOG.md) を参照。

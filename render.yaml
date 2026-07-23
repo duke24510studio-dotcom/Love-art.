@@ -23,7 +23,9 @@ services:
     # but the build needs tailwind/postcss/typescript from devDependencies.
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npx prisma migrate deploy && npm start
-    healthCheckPath: /
+    # /blog is public (no admin auth); / is Basic-Auth-protected once
+    # ADMIN_BASIC_USER/PASS are set, so the health check must not hit it.
+    healthCheckPath: /blog
     envVars:
       - key: NODE_ENV
         value: production
@@ -34,4 +36,10 @@ services:
       - key: OUTPUT_DIR
         value: ./outputs
       - key: OPENAI_API_KEY
+        sync: false
+      # Protects the admin tool (/, /posters, /articles, /products, etc.) —
+      # required in production, or every admin route 503s. /blog stays public.
+      - key: ADMIN_BASIC_USER
+        sync: false
+      - key: ADMIN_BASIC_PASS
         sync: false
