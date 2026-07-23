@@ -104,3 +104,78 @@ model Article {
 
   researchItem ResearchItem? @relation(fields: [researchItemId], references: [id], onDelete: SetNull)
 }
+
+// --- YouTube channel research (overseas trend research + original channel ideation) ---
+// Data comes ONLY from the official YouTube Data API v3 (trending charts + public
+// stats). Used for market research and as INSPIRATION for original channel concepts —
+// never to copy titles/thumbnails/content or to impersonate an existing channel.
+// See docs/YOUTUBE_RESEARCH.md.
+
+// One polling snapshot of a trending video in a given region. History accumulates
+// across runs so "early velocity" (views-per-hour) and rank changes can be tracked.
+model YtVideoSnapshot {
+  id           String    @id @default(cuid())
+  videoId      String
+  regionCode   String    @default("ALL")
+  title        String
+  channelId    String
+  channelTitle String
+  categoryId   String    @default("")
+  publishedAt  DateTime?
+  viewCount    Int       @default(0)
+  likeCount    Int       @default(0)
+  commentCount Int       @default(0)
+  durationSec  Int       @default(0)
+  thumbnailUrl String    @default("")
+  tags         String    @default("")
+  vph          Float     @default(0)
+  fetchedAt    DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  ideas ChannelIdea[]
+
+  @@index([videoId])
+  @@index([regionCode, fetchedAt])
+  @@index([channelId])
+}
+
+// One polling snapshot of a channel's public stats. Compared across time to
+// surface rapidly-growing channels (subscriber/view delta per day).
+model YtChannelSnapshot {
+  id              String   @id @default(cuid())
+  channelId       String
+  title           String
+  country         String   @default("")
+  subscriberCount Int      @default(0)
+  viewCount       Float    @default(0)
+  videoCount      Int      @default(0)
+  thumbnailUrl    String   @default("")
+  fetchedAt       DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@index([channelId, fetchedAt])
+}
+
+// An AI-proposed ORIGINAL channel concept, using a trending video/channel only as
+// inspiration for format and niche. Never reproduces the source's name, titles,
+// thumbnails, or content. Human-reviewed; no auto-upload/auto-post exists.
+model ChannelIdea {
+  id              String   @id @default(cuid())
+  sourceVideoId   String?
+  sourceChannelId String   @default("")
+  sourceRegion    String   @default("")
+  niche           String   @default("")
+  channelName     String   @default("")
+  concept         String   @default("")
+  targetAudience  String   @default("")
+  contentPillars  String   @default("")
+  sampleTitles    String   @default("")
+  postingCadence  String   @default("")
+  notes           String   @default("")
+  model           String   @default("")
+  status          String   @default("idea")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sourceVideo YtVideoSnapshot? @relation(fields: [sourceVideoId], references: [id], onDelete: SetNull)
+}

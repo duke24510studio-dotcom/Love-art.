@@ -147,6 +147,21 @@ See docs/ARTICLE_PIPELINE.md for full design.
 - Themes/prompts in src/lib/hokusai.ts (original compositions only, no reproduction of existing prints); image render shared via src/lib/poster-image.ts
 - Images only — approval/export stays human-reviewed at /posters
 
+## YouTube Research (overseas trend research + original channel ideation)
+
+- Research tool for overseas YouTube trends: periodic polling of trending charts + channel stats
+  via the official YouTube Data API v3 (no scraping)
+- POST /api/cron/youtube (Bearer CRON_SECRET); GitHub Actions workflow runs it every 6 hours
+- Prisma models: YtVideoSnapshot (trending video polls, tracks views-per-hour "vph"), YtChannelSnapshot
+  (channel stat polls, used to compute subscriber/view growth), ChannelIdea (AI-proposed original
+  channel concept, human-reviewed)
+- Trending data is INSPIRATION ONLY for niche/format — the AI channel-idea generator
+  (src/lib/channel-ideas.ts) is explicitly instructed to never reuse a source video's title, a
+  source channel's name/branding, or its content, and never to suggest impersonation or re-uploads
+- No auto-channel-creation, no auto-upload, no auto-posting — proposals are reviewed/approved at
+  /youtube-research, same "generate but don't auto-publish" MVP philosophy as posters/articles
+- See docs/YOUTUBE_RESEARCH.md for full design
+
 ## Future TODOs (not in MVP)
 
 - POST /api/generate/prompt — build prompt from theme, save to PosterGeneration

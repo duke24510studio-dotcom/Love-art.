@@ -1,0 +1,42 @@
+name: YouTube Research Pipeline
+
+# Polls overseas YouTube trending charts + channel stats every 6 hours and
+# generates a small number of ORIGINAL channel-concept proposals for human
+# review. Research + ideation only — nothing is auto-uploaded or auto-posted.
+# See docs/YOUTUBE_RESEARCH.md for the shared cron/secret setup (same pattern
+# as the article/poster pipelines).
+#
+# Required repository secrets:
+#   APP_URL      e.g. https://japandi-poster-studio.onrender.com (no trailing slash)
+#   CRON_SECRET  same value as the CRON_SECRET env var on the server
+
+on:
+  schedule:
+    - cron: "30 */6 * * *" # every 6 hours, staggered after articles/posters
+  workflow_dispatch:
+    inputs:
+      ideaCount:
+        description: "AI channel-idea proposals to generate this run (0-5)"
+        required: false
+        default: "1"
+
+jobs:
+  run-youtube-research:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger YouTube research pipeline
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          IDEA_COUNT: ${{ inputs.ideaCount || '1' }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL / CRON_SECRET secrets are not set; skipping."
+            exit 0
+          fi
+          body="{\"ideaCount\": ${IDEA_COUNT}}"
+          echo "POST ${APP_URL}/api/cron/youtube ${body}"
+          curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/youtube" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d "${body}"
