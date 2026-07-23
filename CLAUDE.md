@@ -132,7 +132,7 @@ See docs/ARTICLE_PIPELINE.md for full design.
 
 - Collects trends from public RSS feeds (Medium tags, Google News JP) as INSPIRATION ONLY
 - Generates COMPLETELY ORIGINAL drafts via OpenAI — never translates or reproduces source articles (copyright + platform ToS)
-- Channels (direction): en2ja (ランタンノート — global trends x Zen life-coach, note), stillflow (still flow / 円相 — Zen x Western philosophy essays, note), econ (behavioral economics / marketing / overseas business practices, note), ja2en (Japanese culture for Medium, not on the daily schedule)
+- Channels (direction): en2ja (ランタンノート — global trends x Zen life-coach, note), stillflow (still flow / 円相 — Zen x Western philosophy essays, note), econ (知の翻訳室 / THE KNOWLEDGE EDIT — behavioral economics / marketing / overseas business practices, note), ja2en (Japanese culture for Medium, not on the daily schedule)
 - Publishing is manual after human review at /articles — no auto-posting (note has no public API; Medium's is closed)
 - External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it daily (1 draft each for en2ja + stillflow + econ)
 - Article status flow: generated → review → approved → published / rejected

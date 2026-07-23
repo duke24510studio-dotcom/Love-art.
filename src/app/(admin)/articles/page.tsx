@@ -20,7 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
 const DIRECTION_LABELS: Record<string, string> = {
   en2ja: "→ note (ランタン)",
   stillflow: "→ note (still flow)",
-  econ: "→ note (経済/マーケ)",
+  econ: "→ note (知の翻訳室)",
   ja2en: "→ Medium (EN)",
 };
 
