@@ -12,6 +12,7 @@
     "postinstall": "prisma generate",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
+    "seed:blog": "tsx prisma/seed-blog.ts",
     "db:push": "prisma migrate dev",
     "db:studio": "prisma studio",
     "setup:openai": "powershell -ExecutionPolicy Bypass -File scripts/setup-openai.ps1",

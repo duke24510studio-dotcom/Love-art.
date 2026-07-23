@@ -104,3 +104,86 @@ model Article {
 
   researchItem ResearchItem? @relation(fields: [researchItemId], references: [id], onDelete: SetNull)
 }
+
+// --- Rakuten affiliate review studio ---
+// One tracked Rakuten product at a time accumulates weekly "review rounds":
+// 5 fixed reviewer-persona write-ups + one AI lifestyle photo per round.
+// Builds a growing library of affiliate review content per product instead of
+// generating many products at once. Publishing stays human-reviewed.
+
+// A Rakuten Ichiba product being tracked for weekly review generation.
+model RakutenProduct {
+  id            String   @id @default(cuid())
+  itemUrl       String   @unique
+  itemCode      String   @default("")
+  shopCode      String   @default("")
+  shopName      String   @default("")
+  name          String   @default("")
+  price         Int      @default(0)
+  imageUrl      String   @default("")
+  catchcopy     String   @default("")
+  itemCaption   String   @default("")
+  genreName     String   @default("")
+  reviewAverage Float    @default(0)
+  reviewCount   Int      @default(0)
+  affiliateUrl  String   @default("")
+  // "active" (weekly cron keeps generating rounds) | "paused" | "archived"
+  status        String   @default("active")
+  weekCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  rounds ReviewRound[]
+}
+
+// One weekly batch of reviews for a product: a shared AI lifestyle photo
+// plus 5 persona reviews (see ReviewRound.reviews).
+model ReviewRound {
+  id         String   @id @default(cuid())
+  productId  String
+  weekNumber Int
+  imagePath  String   @default("")
+  // "generated" -> "review" -> "approved" / "rejected" -> "exported"
+  status     String   @default("generated")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  product RakutenProduct  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reviews ProductReview[]
+}
+
+// One reviewer-persona's write-up within a ReviewRound.
+model ProductReview {
+  id         String   @id @default(cuid())
+  roundId    String
+  persona    String
+  personaJa  String   @default("")
+  angle      String   @default("")
+  title      String   @default("")
+  body       String   @default("")
+  rating     Int      @default(5)
+  snsCaption String   @default("")
+  status     String   @default("generated")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  round ReviewRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+}
+
+// --- Public blog ("茶と暮らしの手帖") ---
+// Original, editorial buying-guide articles shown at /blog with no admin
+// controls — the public-facing site content required to register for
+// affiliate programs (e.g. Rakuten Affiliate) before an affiliate ID exists.
+// Not the same as Article (note/Medium drafts) or ProductReview (persona
+// reviews of one tracked product) — this is the site's own genuine content.
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String   @default("")
+  body        String
+  category    String   @default("")
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
