@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import GenerateArticleForm from "./GenerateArticleForm";
 
 const STATUS_LABELS: Record<string, string> = {
   generated: "Generated",
@@ -59,6 +60,8 @@ export default async function ArticlesPage({
           </p>
         </div>
       </div>
+
+      <GenerateArticleForm />
 
       <div className="flex flex-wrap gap-4 text-xs tracking-widest uppercase">
         <div className="flex gap-2 items-center">
