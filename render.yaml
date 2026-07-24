@@ -37,6 +37,11 @@ services:
         value: ./outputs
       - key: OPENAI_API_KEY
         sync: false
+      # Default (4x, ~4096x6144) OOM-kills this plan's 512MB instance during
+      # the print upscale — confirmed by reproducing the crash and fixing it
+      # by lowering this. Raise only on a higher-memory plan.
+      - key: UPSCALE_SCALE
+        value: "2"
       # Protects the admin tool (/, /posters, /articles, /products, etc.) —
       # required in production, or every admin route 503s. /blog stays public.
       - key: ADMIN_BASIC_USER
