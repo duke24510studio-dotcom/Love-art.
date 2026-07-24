@@ -45,6 +45,24 @@ model PosterGeneration {
   updatedAt         DateTime @updatedAt
 
   theme PosterTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  mockups PosterMockup[]
+}
+
+// AI-generated "poster displayed in a real room" lifestyle photos for a
+// PosterGeneration, used as Etsy/SNS listing photos. One row per fixed scene
+// (see src/lib/poster-mockup.ts). Generated via openai.images.edit on the
+// poster's own image — same technique as ReviewRound's lifestyle photos.
+model PosterMockup {
+  id           String   @id @default(cuid())
+  generationId String
+  scene        String
+  label        String   @default("")
+  imagePath    String   @default("")
+  createdAt    DateTime @default(now())
+
+  generation PosterGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+
+  @@unique([generationId, scene])
 }
 
 // --- Article pipeline (Medium <-> note original-article studio) ---

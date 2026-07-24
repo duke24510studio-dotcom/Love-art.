@@ -12,7 +12,10 @@ export default async function PosterDetailPage({
   const theme = await prisma.posterTheme.findUnique({
     where: { id },
     include: {
-      generations: { orderBy: { createdAt: "desc" } },
+      generations: {
+        orderBy: { createdAt: "desc" },
+        include: { mockups: { orderBy: { createdAt: "asc" } } },
+      },
     },
   });
 
