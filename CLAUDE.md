@@ -48,7 +48,9 @@ MVP only:
 - Tailwind CSS
 - Prisma 7 + SQLite
 - OpenAI API (image generation via DALL-E 3)
-- Local storage under /outputs/images
+- Generated images stored in Postgres (`ImageAsset`, bytea) — Render's free web-service
+  plan has no persistent disk, so local files under /outputs/images don't survive a
+  redeploy; see `src/lib/image-store.ts`
 
 ## Prisma Notes (v7)
 

@@ -1,8 +1,8 @@
-import fs from "fs";
 import path from "path";
 import OpenAI, { toFile } from "openai";
 import { prisma } from "@/lib/prisma";
 import { getOpenAIClient, getOutputImagesDir } from "@/lib/openai";
+import { saveImage } from "@/lib/image-store";
 import type { RakutenProduct, ReviewRound } from "@/generated/prisma/client";
 
 /** Image model for review lifestyle photos. Default gpt-image-1; override with RAKUTEN_IMAGE_MODEL. */
@@ -80,11 +80,9 @@ export async function generateRoundImage(
     throw new Error("画像モデルから画像が返されませんでした");
   }
 
-  const imagesDir = path.resolve(process.cwd(), getOutputImagesDir());
-  fs.mkdirSync(imagesDir, { recursive: true });
   const filename = `review-${round.id}.png`;
-  fs.writeFileSync(path.join(imagesDir, filename), buffer);
   const imagePath = path.join(getOutputImagesDir(), filename).replace(/\\/g, "/");
+  await saveImage(imagePath, buffer);
 
   return prisma.reviewRound.update({
     where: { id: round.id },

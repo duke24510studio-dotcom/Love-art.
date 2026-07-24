@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import JSZip from "jszip";
-import fs from "fs";
 import path from "path";
+import { loadImage } from "@/lib/image-store";
 
 export async function POST() {
   const approved = await prisma.posterGeneration.findMany({
@@ -25,16 +25,15 @@ export async function POST() {
   // Image files
   for (const g of approved) {
     if (g.imagePath) {
-      const absPath = path.resolve(process.cwd(), g.imagePath);
-      if (fs.existsSync(absPath)) {
-        const fileData = fs.readFileSync(absPath);
-        zip.file(`images/${path.basename(g.imagePath)}`, fileData);
+      const asset = await loadImage(g.imagePath);
+      if (asset) {
+        zip.file(`images/${path.basename(g.imagePath)}`, asset.data);
       }
     }
     if (g.printImagePath) {
-      const absPrint = path.resolve(process.cwd(), g.printImagePath);
-      if (fs.existsSync(absPrint)) {
-        zip.file(`print/${path.basename(g.printImagePath)}`, fs.readFileSync(absPrint));
+      const printAsset = await loadImage(g.printImagePath);
+      if (printAsset) {
+        zip.file(`print/${path.basename(g.printImagePath)}`, printAsset.data);
       }
     }
   }

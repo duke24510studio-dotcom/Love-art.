@@ -7,6 +7,18 @@ datasource db {
   provider = "postgresql"
 }
 
+// Render's free web-service plan has no persistent disk — the local
+// filesystem is wiped on every deploy/restart, so generated images are
+// stored here instead of under OUTPUT_DIR. Keyed by the same relative path
+// string ("outputs/images/<file>") that was previously used as a real file
+// path; see src/lib/image-store.ts.
+model ImageAsset {
+  path        String   @id
+  data        Bytes
+  contentType String   @default("image/png")
+  createdAt   DateTime @default(now())
+}
+
 model PosterTheme {
   id             String   @id @default(cuid())
   collection     String
