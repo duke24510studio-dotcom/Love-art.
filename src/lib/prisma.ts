@@ -6,7 +6,11 @@ function createPrismaClient(): PrismaClient {
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set.");
   }
-  const adapter = new PrismaPg({ connectionString });
+  // keepAlive: without it, a pooled connection left idle during a long
+  // upstream call (e.g. a 60-90s OpenAI image generation request) gets
+  // silently dropped somewhere between here and Render's Postgres, and the
+  // next query on it fails with "Connection terminated unexpectedly".
+  const adapter = new PrismaPg({ connectionString, keepAlive: true });
   return new PrismaClient({ adapter } as never);
 }
 
