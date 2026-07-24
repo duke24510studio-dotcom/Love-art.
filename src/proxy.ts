@@ -4,7 +4,17 @@ import { NextRequest, NextResponse } from "next/server";
 // multiview) has delete buttons and buttons that trigger paid OpenAI calls —
 // it must never be reachable on the open internet without credentials. Only
 // the public blog (and the static assets it needs) is allowed through.
-const PUBLIC_PATH_PATTERNS = [/^\/blog(\/|$)/, /^\/api\/static\//, /^\/outputs\//, /^\/favicon\.ico$/];
+// /api/cron/* is also exempt from Basic Auth: those routes carry their own
+// Bearer CRON_SECRET check (and fail closed if CRON_SECRET is unset), and the
+// external GitHub Actions cron sends a Bearer header, not Basic auth — without
+// this exemption the daily pipelines 401 here before ever reaching that check.
+const PUBLIC_PATH_PATTERNS = [
+  /^\/blog(\/|$)/,
+  /^\/api\/static\//,
+  /^\/outputs\//,
+  /^\/favicon\.ico$/,
+  /^\/api\/cron\//,
+];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATH_PATTERNS.some((re) => re.test(pathname));
