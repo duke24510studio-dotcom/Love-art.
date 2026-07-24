@@ -145,7 +145,9 @@ See docs/ARTICLE_PIPELINE.md for full design.
 - POST /api/cron/posters (Bearer CRON_SECRET); GitHub Actions workflow runs it daily at 00:15 UTC
 - Orientation: "portrait" (2:3 wall art), "landscape" (16:9 — YouTube thumbnails/banners, EC hero images), or "mixed" (default: 1-in-3 landscape)
 - Image model configurable via POSTER_IMAGE_MODEL (default gpt-image-1; dall-e-3 fallback), quality via POSTER_IMAGE_QUALITY
-- Print-resolution upscale (src/lib/upscale.ts, default 4x via sharp) written to PosterGeneration.printImagePath alongside the preview image
+- Print-resolution upscale (src/lib/upscale.ts, code default 4x via sharp; `UPSCALE_SCALE=2` set in
+  render.yaml — 4x OOM-kills the free plan's 512MB instance, reproduced and confirmed) written to
+  PosterGeneration.printImagePath alongside the preview image
 - Themes/prompts in src/lib/hokusai.ts (original compositions only, no reproduction of existing prints); image render shared via src/lib/poster-image.ts
 - Images only — approval/export stays human-reviewed at /posters
 
