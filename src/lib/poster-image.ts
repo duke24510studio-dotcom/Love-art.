@@ -1,8 +1,8 @@
-import fs from "fs";
 import path from "path";
 import type OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
 import { getOpenAIClient, getOutputImagesDir } from "@/lib/openai";
+import { saveImage } from "@/lib/image-store";
 import { syncThemeStatus } from "@/lib/generation";
 import { upscaleToPrint } from "@/lib/upscale";
 import type { PosterGeneration } from "@/generated/prisma/client";
@@ -79,20 +79,17 @@ export async function renderPosterImage(
     throw new Error("No image returned from the image model");
   }
 
-  const imagesDir = path.resolve(process.cwd(), getOutputImagesDir());
-  fs.mkdirSync(imagesDir, { recursive: true });
-
   const filename = `${generation.id}.png`;
-  fs.writeFileSync(path.join(imagesDir, filename), buffer);
   const imagePath = path.join(getOutputImagesDir(), filename).replace(/\\/g, "/");
+  await saveImage(imagePath, buffer);
 
   // Print-resolution upscale (best-effort; the preview still works without it).
   let printImagePath = "";
   try {
     const print = await upscaleToPrint(buffer);
     const printName = `${generation.id}-print.png`;
-    fs.writeFileSync(path.join(imagesDir, printName), print.buffer);
     printImagePath = path.join(getOutputImagesDir(), printName).replace(/\\/g, "/");
+    await saveImage(printImagePath, print.buffer);
   } catch (err) {
     console.error("[poster] print upscale failed:", err);
   }

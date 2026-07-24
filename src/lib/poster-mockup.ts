@@ -1,9 +1,9 @@
-import fs from "fs";
 import path from "path";
 import type OpenAI from "openai";
 import { toFile } from "openai";
 import { prisma } from "@/lib/prisma";
 import { getOpenAIClient, getOutputImagesDir } from "@/lib/openai";
+import { saveImage, loadImage } from "@/lib/image-store";
 import type { PosterGeneration, PosterTheme } from "@/generated/prisma/client";
 import { MOCKUP_SCENES, type MockupSceneKey } from "@/lib/poster-mockup-scenes";
 
@@ -42,10 +42,11 @@ export async function generateMockup(
     throw new Error("This poster has no generated image yet.");
   }
 
-  const imagesDir = path.resolve(process.cwd(), getOutputImagesDir());
-  const sourcePath = path.resolve(process.cwd(), generation.imagePath);
-  const sourceBuffer = fs.readFileSync(sourcePath);
-  const sourceFile = await toFile(sourceBuffer, "poster.png", { type: "image/png" });
+  const source = await loadImage(generation.imagePath);
+  if (!source) {
+    throw new Error("This poster's source image could not be found in storage.");
+  }
+  const sourceFile = await toFile(source.data, "poster.png", { type: "image/png" });
 
   const openai = getOpenAIClient();
   const model = getMockupImageModel();
@@ -70,10 +71,9 @@ export async function generateMockup(
     throw new Error("No image returned from the image model");
   }
 
-  fs.mkdirSync(imagesDir, { recursive: true });
   const filename = `mockup-${generation.id}-${scene.key}.png`;
-  fs.writeFileSync(path.join(imagesDir, filename), buffer);
   const imagePath = path.join(getOutputImagesDir(), filename).replace(/\\/g, "/");
+  await saveImage(imagePath, buffer);
 
   return prisma.posterMockup.upsert({
     where: { generationId_scene: { generationId: generation.id, scene: scene.key } },
