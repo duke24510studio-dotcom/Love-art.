@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { PosterTheme, PosterGeneration } from "@/generated/prisma/client";
+import type { PosterTheme, PosterGeneration, PosterMockup } from "@/generated/prisma/client";
+import { MOCKUP_SCENES } from "@/lib/poster-mockup-scenes";
 
-type ThemeWithGenerations = PosterTheme & { generations: PosterGeneration[] };
+type GenerationWithMockups = PosterGeneration & { mockups: PosterMockup[] };
+type ThemeWithGenerations = PosterTheme & { generations: GenerationWithMockups[] };
 
 const STATUS_LABELS: Record<string, string> = {
   idea: "Idea",
@@ -117,6 +119,42 @@ export default function PosterDetailClient({ theme }: { theme: ThemeWithGenerati
     if (!confirm(`Delete "${theme.themeEn}"? This cannot be undone.`)) return;
     await fetch(`/api/posters/${theme.id}`, { method: "DELETE" });
     router.push("/posters");
+  };
+
+  const [mockupError, setMockupError] = useState<string | null>(null);
+  const [mockupLoading, setMockupLoading] = useState(false);
+
+  const generateMockups = async (count: number) => {
+    if (!latestGen) return;
+    setMockupLoading(true);
+    setMockupError(null);
+    try {
+      const res = await fetch(`/api/posters/generations/${latestGen.id}/mockups`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ count }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMockupError(data.error ?? "Mockup generation failed");
+        return;
+      }
+      if (data.errors?.length) {
+        setMockupError(
+          `${data.errors.length} scene(s) failed: ${data.errors.map((e: { scene: string }) => e.scene).join(", ")}`
+        );
+      }
+      router.refresh();
+    } catch {
+      setMockupError("Network error — check the server and try again.");
+    } finally {
+      setMockupLoading(false);
+    }
+  };
+
+  const deleteMockup = async (mockupId: string) => {
+    await fetch(`/api/posters/mockups/${mockupId}`, { method: "DELETE" });
+    router.refresh();
   };
 
   return (
@@ -360,6 +398,68 @@ export default function PosterDetailClient({ theme }: { theme: ThemeWithGenerati
           )}
         </div>
       </div>
+
+      {/* Room mockups (Etsy/SNS listing photos) */}
+      {latestGen?.imagePath && (
+        <div>
+          <div className="flex items-end justify-between mb-3">
+            <h2 className="text-xs tracking-[0.4em] uppercase opacity-50">
+              Room Mockups ({latestGen.mockups.length}/{MOCKUP_SCENES.length})
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => generateMockups(6)}
+                disabled={mockupLoading || latestGen.mockups.length >= MOCKUP_SCENES.length}
+                className="px-4 py-2 text-xs tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-30"
+                style={{ backgroundColor: "#2d5a3d", color: "#f5f0e8" }}
+              >
+                {mockupLoading ? "Generating..." : "Generate Test Batch (6)"}
+              </button>
+              <button
+                onClick={() => generateMockups(MOCKUP_SCENES.length)}
+                disabled={mockupLoading || latestGen.mockups.length >= MOCKUP_SCENES.length}
+                className="px-4 py-2 text-xs tracking-widest uppercase border hover:opacity-80 transition-opacity disabled:opacity-30"
+                style={{ borderColor: "#d8d0c0" }}
+              >
+                Generate Remaining ({MOCKUP_SCENES.length - latestGen.mockups.length})
+              </button>
+            </div>
+          </div>
+          {mockupError && (
+            <p className="text-xs mb-3" style={{ color: "#8b3a3a" }}>
+              {mockupError}
+            </p>
+          )}
+          <p className="text-xs opacity-50 mb-4 leading-relaxed">
+            Each scene edits this poster&apos;s own image via the OpenAI image model
+            (openai.images.edit) into a realistic room photo — incurs OpenAI usage cost per image.
+          </p>
+          {latestGen.mockups.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {latestGen.mockups.map((m) => (
+                <div key={m.id} className="border" style={{ borderColor: "#d8d0c0" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/outputs/images/${m.imagePath.split("/").pop()}`}
+                    alt={m.label}
+                    className="w-full aspect-square object-cover"
+                  />
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-xs opacity-60">{m.label}</span>
+                    <button
+                      onClick={() => deleteMockup(m.id)}
+                      className="text-xs opacity-30 hover:opacity-60 transition-opacity"
+                      style={{ color: "#8b3a3a" }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* All generations history */}
       {theme.generations.length > 1 && (
