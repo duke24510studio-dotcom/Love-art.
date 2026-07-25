@@ -3,6 +3,24 @@
 import { useCallback, useEffect, useState } from "react";
 import { getCategoryLabel } from "@/lib/youtube-categories";
 
+// Dark "research console" palette — this page intentionally departs from the
+// app's light Japandi theme to match the reference tool's dark UI and keep
+// dense tabular data readable.
+const C = {
+  bg: "#121212",
+  panel: "#1a1a1a",
+  panelAlt: "#202020",
+  border: "#333333",
+  text: "#f2f2ef",
+  textMuted: "#b4b4ae",
+  textFaint: "#87877f",
+  accent: "#3ecf8e",
+  accentText: "#0b2016",
+  danger: "#ff8484",
+  dangerSoft: "rgba(255, 132, 132, 0.12)",
+  warning: "#e8c468",
+};
+
 type Tab = "trending" | "velocity" | "overseas" | "growth" | "ideas";
 
 const TABS: { id: Tab; label: string }[] = [
@@ -71,11 +89,11 @@ const STATUS_LABELS: Record<string, string> = {
   approved: "Approved",
   rejected: "Rejected",
 };
-const STATUS_COLORS: Record<string, string> = {
-  idea: "#8a8a8a",
-  review: "#c9a84c",
-  approved: "#2d5a3d",
-  rejected: "#8b3a3a",
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  idea: { bg: "#4a4a44", text: "#f2f2ef" },
+  review: { bg: C.warning, text: "#2a2205" },
+  approved: { bg: C.accent, text: C.accentText },
+  rejected: { bg: C.danger, text: "#2a0b0b" },
 };
 
 const numberFmt = new Intl.NumberFormat("en-US");
@@ -232,13 +250,18 @@ export default function YoutubeResearchClient() {
   const csvTab = tab === "growth" ? "channels" : tab === "ideas" ? "ideas" : "videos";
 
   return (
-    <div className="space-y-6">
-      <div className="pt-4 pb-2" style={{ borderBottom: "1px solid #d8d0c0" }}>
-        <p className="text-xs tracking-[0.4em] uppercase opacity-50 mb-1">Market Research</p>
-        <h1 className="text-3xl font-light tracking-widest" style={{ color: "#2d5a3d" }}>
+    <div
+      className="space-y-6 -mx-6 px-6 py-8 -mt-8"
+      style={{ backgroundColor: C.bg, color: C.text, minHeight: "100%" }}
+    >
+      <div className="pt-4 pb-2" style={{ borderBottom: `1px solid ${C.border}` }}>
+        <p className="text-xs tracking-[0.4em] uppercase mb-1" style={{ color: C.textMuted }}>
+          Market Research
+        </p>
+        <h1 className="text-3xl font-light tracking-widest" style={{ color: C.accent }}>
           YouTube バズリサーチ
         </h1>
-        <p className="text-sm opacity-60 mt-1 tracking-wide">
+        <p className="text-sm mt-1 tracking-wide" style={{ color: C.textMuted }}>
           Overseas trending-video &amp; channel-growth research, plus AI-assisted original channel
           concept proposals — inspiration only, human-reviewed, no auto-posting.
         </p>
@@ -251,9 +274,9 @@ export default function YoutubeResearchClient() {
             onClick={() => setTab(t.id)}
             className="px-4 py-2 text-xs tracking-widest uppercase border transition-opacity hover:opacity-80"
             style={{
-              borderColor: "#d8d0c0",
-              backgroundColor: tab === t.id ? "#2d5a3d" : "transparent",
-              color: tab === t.id ? "#f5f0e8" : "#2c2c2c",
+              borderColor: C.border,
+              backgroundColor: tab === t.id ? C.accent : "transparent",
+              color: tab === t.id ? C.accentText : C.text,
             }}
           >
             {t.label}
@@ -264,14 +287,14 @@ export default function YoutubeResearchClient() {
           onClick={collectNow}
           disabled={busy !== null}
           className="px-4 py-2 text-xs tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-40"
-          style={{ backgroundColor: "#2d5a3d", color: "#f5f0e8" }}
+          style={{ backgroundColor: C.accent, color: C.accentText }}
         >
           {busy === "collect" ? "Collecting..." : "⟳ Collect Now"}
         </button>
         <a
           href={`/api/export/youtube-csv?tab=${csvTab}`}
           className="px-4 py-2 text-xs tracking-widest uppercase hover:opacity-70 transition-opacity"
-          style={{ color: "#2d5a3d", border: "1px solid #2d5a3d" }}
+          style={{ color: C.accent, border: `1px solid ${C.accent}` }}
         >
           ⇩ Export CSV
         </a>
@@ -285,8 +308,8 @@ export default function YoutubeResearchClient() {
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && loadVideos()}
               placeholder="タイトル・チャンネル検索..."
-              className="border px-3 py-2 text-sm bg-white/60 focus:outline-none"
-              style={{ borderColor: "#d8d0c0", minWidth: "220px" }}
+              className="border px-3 py-2 text-sm focus:outline-none"
+              style={{ borderColor: C.border, backgroundColor: C.panel, color: C.text, minWidth: "220px" }}
             />
 
             {tab === "overseas" && (
@@ -298,8 +321,8 @@ export default function YoutubeResearchClient() {
                     className="px-3 py-1.5 text-xs tracking-widest uppercase transition-opacity hover:opacity-80"
                     style={
                       region === r
-                        ? { backgroundColor: "#2d5a3d", color: "#f5f0e8" }
-                        : { backgroundColor: "#f5f0e8", color: "#2c2c2c", border: "1px solid #d8d0c0" }
+                        ? { backgroundColor: C.accent, color: C.accentText }
+                        : { backgroundColor: C.panel, color: C.text, border: `1px solid ${C.border}` }
                     }
                   >
                     {r === "ALL" ? "全地域" : r}
@@ -309,12 +332,14 @@ export default function YoutubeResearchClient() {
             )}
 
             <div className="flex items-center gap-1">
-              <span className="text-xs tracking-widest uppercase opacity-40">タイプ</span>
+              <span className="text-xs tracking-widest uppercase" style={{ color: C.textFaint }}>
+                タイプ
+              </span>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="border px-2 py-1.5 text-xs bg-white/60 focus:outline-none"
-                style={{ borderColor: "#d8d0c0" }}
+                className="border px-2 py-1.5 text-xs focus:outline-none"
+                style={{ borderColor: C.border, backgroundColor: C.panel, color: C.text }}
               >
                 {TYPES.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -325,50 +350,57 @@ export default function YoutubeResearchClient() {
             </div>
 
             <div className="flex items-center gap-1">
-              <span className="text-xs tracking-widest uppercase opacity-40">再生数≥</span>
+              <span className="text-xs tracking-widest uppercase" style={{ color: C.textFaint }}>
+                再生数≥
+              </span>
               <input
                 value={minViews}
                 onChange={(e) => setMinViews(e.target.value.replace(/[^0-9]/g, ""))}
                 onKeyDown={(e) => e.key === "Enter" && loadVideos()}
                 placeholder="0"
-                className="border px-2 py-1.5 text-xs bg-white/60 focus:outline-none w-24"
-                style={{ borderColor: "#d8d0c0" }}
+                className="border px-2 py-1.5 text-xs focus:outline-none w-24"
+                style={{ borderColor: C.border, backgroundColor: C.panel, color: C.text }}
               />
             </div>
 
             <button
               onClick={loadVideos}
               className="px-3 py-2 text-xs tracking-widest uppercase hover:opacity-70"
-              style={{ color: "#2d5a3d", border: "1px solid #2d5a3d" }}
+              style={{ color: C.accent, border: `1px solid ${C.accent}` }}
             >
               検索
             </button>
             <button
               onClick={resetFilters}
-              className="px-3 py-2 text-xs tracking-widest uppercase hover:opacity-70 opacity-60"
+              className="px-3 py-2 text-xs tracking-widest uppercase hover:opacity-80"
+              style={{ color: C.textMuted }}
             >
               リセット
             </button>
           </div>
 
-          <p className="text-xs opacity-40">
+          <p className="text-xs" style={{ color: C.textFaint }}>
             公開7日以内の動画のみ。snapshotを2回以上実行するとVPHが実測(⚡)になります。
           </p>
         </div>
       )}
 
       {lastCollected && (
-        <div className="text-xs p-3 border" style={{ borderColor: "#d8d0c0", backgroundColor: "#ede8dc" }}>
+        <div className="text-xs p-3 border" style={{ borderColor: C.border, backgroundColor: C.panel, color: C.textMuted }}>
           {lastCollected}
         </div>
       )}
       {error && (
-        <div className="text-xs p-3 border" style={{ borderColor: "#8b3a3a", color: "#8b3a3a" }}>
+        <div className="text-xs p-3 border" style={{ borderColor: C.danger, backgroundColor: C.dangerSoft, color: C.danger }}>
           {error}
         </div>
       )}
 
-      {loading && <div className="text-sm opacity-50 py-8 text-center">Loading...</div>}
+      {loading && (
+        <div className="text-sm py-8 text-center" style={{ color: C.textMuted }}>
+          Loading...
+        </div>
+      )}
 
       {!loading && isVideoTab && (
         <VideoTable rows={videos} highlight={tab === "velocity" || tab === "overseas" ? "vph" : "views"} />
@@ -387,21 +419,21 @@ function VideoTable({ rows, highlight }: { rows: VideoRow[]; highlight: "views" 
   if (rows.length === 0) {
     return (
       <div
-        className="border p-12 text-center text-sm opacity-60"
-        style={{ borderColor: "#d8d0c0", backgroundColor: "#ede8dc" }}
+        className="border p-12 text-center text-sm"
+        style={{ borderColor: C.border, backgroundColor: C.panel, color: C.textMuted }}
       >
-        No data yet. Click <span className="opacity-90">Collect Now</span> (requires YOUTUBE_API_KEY)
+        No data yet. Click <span style={{ color: C.text }}>Collect Now</span> (requires YOUTUBE_API_KEY)
         to poll the current trending charts.
       </div>
     );
   }
   return (
-    <div className="overflow-x-auto border" style={{ borderColor: "#d8d0c0" }}>
+    <div className="overflow-x-auto border" style={{ borderColor: C.border }}>
       <table className="w-full text-sm">
         <thead>
           <tr
-            className="text-left text-xs tracking-widest uppercase opacity-50"
-            style={{ backgroundColor: "#ede8dc" }}
+            className="text-left text-xs tracking-widest uppercase"
+            style={{ backgroundColor: C.panelAlt, color: C.textMuted }}
           >
             <th className="p-3">サムネ</th>
             <th className="p-3">タイトル / チャンネル</th>
@@ -414,14 +446,14 @@ function VideoTable({ rows, highlight }: { rows: VideoRow[]; highlight: "views" 
         </thead>
         <tbody>
           {rows.map((v) => (
-            <tr key={v.id} className="border-t align-top" style={{ borderColor: "#d8d0c0" }}>
+            <tr key={v.id} className="border-t align-top" style={{ borderColor: C.border, backgroundColor: C.panel }}>
               <td className="p-3">
                 <a href={`https://www.youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer">
                   {v.thumbnailUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={v.thumbnailUrl} alt="" className="w-28 aspect-video object-cover" />
                   ) : (
-                    <div className="w-28 aspect-video" style={{ backgroundColor: "#d8d0c0" }} />
+                    <div className="w-28 aspect-video" style={{ backgroundColor: C.panelAlt }} />
                   )}
                 </a>
               </td>
@@ -431,45 +463,59 @@ function VideoTable({ rows, highlight }: { rows: VideoRow[]; highlight: "views" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:underline"
+                  style={{ color: C.text }}
                 >
                   {v.title}
                 </a>
-                <div className="text-xs opacity-50 mt-0.5">{v.channelTitle}</div>
+                <div className="text-xs mt-0.5" style={{ color: C.textMuted }}>
+                  {v.channelTitle}
+                </div>
                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                   {v.snapshotCount > 1 && (
                     <span
                       className="text-[10px] px-1.5 py-0.5 tracking-wide"
-                      style={{ backgroundColor: "#2d5a3d", color: "#f5f0e8" }}
+                      style={{ backgroundColor: C.accent, color: C.accentText }}
                     >
                       追跡中
                     </span>
                   )}
                   {v.videoType !== "normal" && (
-                    <span className="text-[10px] px-1.5 py-0.5 tracking-wide border" style={{ borderColor: "#d8d0c0" }}>
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 tracking-wide border"
+                      style={{ borderColor: C.border, color: C.textMuted }}
+                    >
                       {v.videoType === "shorts" ? "ショート" : "ライブ"}
                     </span>
                   )}
-                  <span className="text-[10px] opacity-50">{getCategoryLabel(v.categoryId)}</span>
+                  <span className="text-[10px]" style={{ color: C.textFaint }}>
+                    {getCategoryLabel(v.categoryId)}
+                  </span>
                 </div>
               </td>
-              <td className="p-3 text-xs opacity-70">{v.regionCode}</td>
+              <td className="p-3 text-xs" style={{ color: C.textMuted }}>
+                {v.regionCode}
+              </td>
               <td
                 className="p-3 text-right"
-                style={highlight === "views" ? { color: "#2d5a3d", fontWeight: 600 } : undefined}
+                style={highlight === "views" ? { color: C.accent, fontWeight: 600 } : { color: C.text }}
               >
                 {fmt(v.viewCount)}
               </td>
               <td
                 className="p-3 text-right"
-                style={highlight === "vph" ? { color: "#2d5a3d", fontWeight: 600 } : undefined}
+                style={highlight === "vph" ? { color: C.accent, fontWeight: 600 } : { color: C.text }}
               >
                 {fmt(v.vph)}
                 <span className="ml-1" title={v.vphMeasured ? "実測" : "推定"}>
                   {v.vphMeasured ? "⚡" : ""}
                 </span>
               </td>
-              <td className="p-3 text-right opacity-70">{fmt(v.likeCount)}</td>
-              <td className="p-3 text-xs opacity-50">{relativeTime(v.publishedAt)}</td>
+              <td className="p-3 text-right" style={{ color: C.textMuted }}>
+                {fmt(v.likeCount)}
+              </td>
+              <td className="p-3 text-xs" style={{ color: C.textMuted }}>
+                {relativeTime(v.publishedAt)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -482,8 +528,8 @@ function GrowthTable({ rows }: { rows: ChannelGrowthRow[] }) {
   if (rows.length === 0) {
     return (
       <div
-        className="border p-12 text-center text-sm opacity-60"
-        style={{ borderColor: "#d8d0c0", backgroundColor: "#ede8dc" }}
+        className="border p-12 text-center text-sm"
+        style={{ borderColor: C.border, backgroundColor: C.panel, color: C.textMuted }}
       >
         Not enough history yet. Growth needs at least two Collect Now runs (spread over time) per
         channel to compute a trend.
@@ -491,12 +537,12 @@ function GrowthTable({ rows }: { rows: ChannelGrowthRow[] }) {
     );
   }
   return (
-    <div className="overflow-x-auto border" style={{ borderColor: "#d8d0c0" }}>
+    <div className="overflow-x-auto border" style={{ borderColor: C.border }}>
       <table className="w-full text-sm">
         <thead>
           <tr
-            className="text-left text-xs tracking-widest uppercase opacity-50"
-            style={{ backgroundColor: "#ede8dc" }}
+            className="text-left text-xs tracking-widest uppercase"
+            style={{ backgroundColor: C.panelAlt, color: C.textMuted }}
           >
             <th className="p-3">Channel</th>
             <th className="p-3">Country</th>
@@ -508,24 +554,33 @@ function GrowthTable({ rows }: { rows: ChannelGrowthRow[] }) {
         </thead>
         <tbody>
           {rows.map((c) => (
-            <tr key={c.channelId} className="border-t" style={{ borderColor: "#d8d0c0" }}>
+            <tr key={c.channelId} className="border-t" style={{ borderColor: C.border, backgroundColor: C.panel }}>
               <td className="p-3">
                 <a
                   href={`https://www.youtube.com/channel/${c.channelId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:underline"
+                  style={{ color: C.text }}
                 >
                   {c.title}
                 </a>
               </td>
-              <td className="p-3 text-xs opacity-70">{c.country || "—"}</td>
-              <td className="p-3 text-right">{fmt(c.subscriberNow)}</td>
-              <td className="p-3 text-right" style={{ color: "#2d5a3d", fontWeight: 600 }}>
+              <td className="p-3 text-xs" style={{ color: C.textMuted }}>
+                {c.country || "—"}
+              </td>
+              <td className="p-3 text-right" style={{ color: C.text }}>
+                {fmt(c.subscriberNow)}
+              </td>
+              <td className="p-3 text-right" style={{ color: C.accent, fontWeight: 600 }}>
                 +{fmt(c.subscriberGrowth)}
               </td>
-              <td className="p-3 text-right">+{fmt(c.subscriberGrowthPerDay)}</td>
-              <td className="p-3 text-right opacity-70">+{fmt(c.viewGrowth)}</td>
+              <td className="p-3 text-right" style={{ color: C.text }}>
+                +{fmt(c.subscriberGrowthPerDay)}
+              </td>
+              <td className="p-3 text-right" style={{ color: C.textMuted }}>
+                +{fmt(c.viewGrowth)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -548,7 +603,7 @@ function IdeasPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs opacity-50 max-w-2xl">
+        <p className="text-xs max-w-2xl" style={{ color: C.textMuted }}>
           Each proposal is an ORIGINAL channel concept inspired only by the format/niche of a
           trending video — never a copy. Review and approve before building anything.
         </p>
@@ -556,7 +611,7 @@ function IdeasPanel({
           onClick={onGenerate}
           disabled={busy !== null}
           className="px-4 py-2 text-xs tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-40 shrink-0 ml-4"
-          style={{ backgroundColor: "#2d5a3d", color: "#f5f0e8" }}
+          style={{ backgroundColor: C.accent, color: C.accentText }}
         >
           {busy === "idea" ? "Generating..." : "+ Generate Idea"}
         </button>
@@ -564,78 +619,93 @@ function IdeasPanel({
 
       {ideas.length === 0 ? (
         <div
-          className="border p-12 text-center text-sm opacity-60"
-          style={{ borderColor: "#d8d0c0", backgroundColor: "#ede8dc" }}
+          className="border p-12 text-center text-sm"
+          style={{ borderColor: C.border, backgroundColor: C.panel, color: C.textMuted }}
         >
-          No proposals yet. Click <span className="opacity-90">Generate Idea</span> (requires
+          No proposals yet. Click <span style={{ color: C.text }}>Generate Idea</span> (requires
           OPENAI_API_KEY and at least one Collect Now run).
         </div>
       ) : (
         <div className="space-y-3">
-          {ideas.map((idea) => (
-            <div key={idea.id} className="border p-5" style={{ borderColor: "#d8d0c0", backgroundColor: "#ede8dc" }}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-sm font-medium">{idea.channelName}</div>
-                  <div className="text-xs opacity-60 mt-1">{idea.concept}</div>
-                </div>
-                <span
-                  className="text-xs px-3 py-1 tracking-widest uppercase shrink-0"
-                  style={{ backgroundColor: STATUS_COLORS[idea.status] ?? "#8a8a8a", color: "#f5f0e8" }}
-                >
-                  {STATUS_LABELS[idea.status] ?? idea.status}
-                </span>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-3 mt-4 text-xs">
-                <div>
-                  <div className="tracking-[0.3em] uppercase opacity-50 mb-1">Audience</div>
-                  <div className="opacity-80">{idea.targetAudience}</div>
-                </div>
-                <div>
-                  <div className="tracking-[0.3em] uppercase opacity-50 mb-1">Cadence</div>
-                  <div className="opacity-80">{idea.postingCadence}</div>
-                </div>
-                <div>
-                  <div className="tracking-[0.3em] uppercase opacity-50 mb-1">Content Pillars</div>
-                  <div className="opacity-80">{idea.contentPillars}</div>
-                </div>
-                <div>
-                  <div className="tracking-[0.3em] uppercase opacity-50 mb-1">Sample Titles</div>
-                  <div className="opacity-80">{idea.sampleTitles}</div>
-                </div>
-              </div>
-
-              {idea.sourceVideo && (
-                <div className="text-xs opacity-40 mt-3">
-                  Inspiration signal: {idea.sourceVideo.regionCode} trending format (not reproduced)
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-3 mt-4">
-                {idea.status !== "approved" && (
-                  <button
-                    onClick={() => onSetStatus(idea.id, "approved")}
-                    disabled={busy !== null}
-                    className="px-4 py-1.5 text-xs tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-40"
-                    style={{ backgroundColor: "#2d5a3d", color: "#f5f0e8" }}
+          {ideas.map((idea) => {
+            const statusColor = STATUS_COLORS[idea.status] ?? STATUS_COLORS.idea;
+            return (
+              <div key={idea.id} className="border p-5" style={{ borderColor: C.border, backgroundColor: C.panel }}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-medium" style={{ color: C.text }}>
+                      {idea.channelName}
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: C.textMuted }}>
+                      {idea.concept}
+                    </div>
+                  </div>
+                  <span
+                    className="text-xs px-3 py-1 tracking-widest uppercase shrink-0"
+                    style={{ backgroundColor: statusColor.bg, color: statusColor.text }}
                   >
-                    {busy === idea.id ? "Saving..." : "Approve"}
-                  </button>
+                    {STATUS_LABELS[idea.status] ?? idea.status}
+                  </span>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-3 mt-4 text-xs">
+                  <div>
+                    <div className="tracking-[0.3em] uppercase mb-1" style={{ color: C.textFaint }}>
+                      Audience
+                    </div>
+                    <div style={{ color: C.textMuted }}>{idea.targetAudience}</div>
+                  </div>
+                  <div>
+                    <div className="tracking-[0.3em] uppercase mb-1" style={{ color: C.textFaint }}>
+                      Cadence
+                    </div>
+                    <div style={{ color: C.textMuted }}>{idea.postingCadence}</div>
+                  </div>
+                  <div>
+                    <div className="tracking-[0.3em] uppercase mb-1" style={{ color: C.textFaint }}>
+                      Content Pillars
+                    </div>
+                    <div style={{ color: C.textMuted }}>{idea.contentPillars}</div>
+                  </div>
+                  <div>
+                    <div className="tracking-[0.3em] uppercase mb-1" style={{ color: C.textFaint }}>
+                      Sample Titles
+                    </div>
+                    <div style={{ color: C.textMuted }}>{idea.sampleTitles}</div>
+                  </div>
+                </div>
+
+                {idea.sourceVideo && (
+                  <div className="text-xs mt-3" style={{ color: C.textFaint }}>
+                    Inspiration signal: {idea.sourceVideo.regionCode} trending format (not reproduced)
+                  </div>
                 )}
-                {idea.status !== "rejected" && (
-                  <button
-                    onClick={() => onSetStatus(idea.id, "rejected")}
-                    disabled={busy !== null}
-                    className="px-4 py-1.5 text-xs tracking-widest uppercase border hover:opacity-80 transition-opacity disabled:opacity-40"
-                    style={{ borderColor: "#8b3a3a", color: "#8b3a3a" }}
-                  >
-                    Reject
-                  </button>
-                )}
+
+                <div className="flex flex-wrap gap-3 mt-4">
+                  {idea.status !== "approved" && (
+                    <button
+                      onClick={() => onSetStatus(idea.id, "approved")}
+                      disabled={busy !== null}
+                      className="px-4 py-1.5 text-xs tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-40"
+                      style={{ backgroundColor: C.accent, color: C.accentText }}
+                    >
+                      {busy === idea.id ? "Saving..." : "Approve"}
+                    </button>
+                  )}
+                  {idea.status !== "rejected" && (
+                    <button
+                      onClick={() => onSetStatus(idea.id, "rejected")}
+                      disabled={busy !== null}
+                      className="px-4 py-1.5 text-xs tracking-widest uppercase border hover:opacity-80 transition-opacity disabled:opacity-40"
+                      style={{ borderColor: C.danger, color: C.danger }}
+                    >
+                      Reject
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
