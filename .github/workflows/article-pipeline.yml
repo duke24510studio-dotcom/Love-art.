@@ -15,7 +15,7 @@ name: Article Pipeline
 
 on:
   schedule:
-    - cron: "0 0 * * *" # daily at 00:00 UTC (09:00 JST)
+    - cron: "0 12 * * *" # daily at 12:00 UTC (21:00 JST)
   workflow_dispatch:
     inputs:
       direction:
