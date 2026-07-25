@@ -12,7 +12,7 @@ name: Poster Pipeline
 
 on:
   schedule:
-    - cron: "15 0 * * *" # daily at 00:15 UTC (09:15 JST), staggered after articles
+    - cron: "15 12 * * *" # daily at 12:15 UTC (21:15 JST), staggered after articles
   workflow_dispatch:
     inputs:
       count:

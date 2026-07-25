@@ -142,7 +142,7 @@ See docs/ARTICLE_PIPELINE.md for full design.
 ## Poster Pipeline (Hokusai aizuri-e auto-generation)
 
 - Daily cron generates original Hokusai-style aizuri-e (indigo ukiyo-e) poster images (default 3)
-- POST /api/cron/posters (Bearer CRON_SECRET); GitHub Actions workflow runs it daily at 00:15 UTC
+- POST /api/cron/posters (Bearer CRON_SECRET); GitHub Actions workflow runs it daily at 12:15 UTC (21:15 JST)
 - Orientation: "portrait" (2:3 wall art), "landscape" (16:9 — YouTube thumbnails/banners, EC hero images), or "mixed" (default: 1-in-3 landscape)
 - Image model configurable via POSTER_IMAGE_MODEL (default gpt-image-1; dall-e-3 fallback), quality via POSTER_IMAGE_QUALITY
 - Print-resolution upscale (src/lib/upscale.ts, code default 4x via sharp; `UPSCALE_SCALE=2` set in
