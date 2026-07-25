@@ -128,6 +128,7 @@ model YtVideoSnapshot {
   durationSec  Int       @default(0)
   thumbnailUrl String    @default("")
   tags         String    @default("")
+  liveBroadcastContent String @default("none")
   vph          Float     @default(0)
   fetchedAt    DateTime  @default(now())
   createdAt    DateTime  @default(now())

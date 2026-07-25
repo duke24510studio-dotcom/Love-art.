@@ -21,6 +21,7 @@ export type YtVideoRaw = {
     publishedAt: string;
     thumbnails?: { medium?: { url: string }; high?: { url: string }; default?: { url: string } };
     tags?: string[];
+    liveBroadcastContent?: string;
   };
   statistics?: {
     viewCount?: string;
@@ -74,10 +75,19 @@ export function parseIsoDuration(duration: string | undefined): number {
   );
 }
 
-/** Views-per-hour since publish — the "early velocity" signal. */
+/** Views-per-hour since publish — the "early velocity" signal (estimate, before 2+ snapshots exist). */
 export function computeVph(viewCount: number, publishedAt: Date, now: Date = new Date()): number {
   const hours = Math.max((now.getTime() - publishedAt.getTime()) / 3_600_000, 1);
   return viewCount / hours;
+}
+
+export type VideoType = "live" | "shorts" | "normal";
+
+/** Classify a video as live/shorts/normal for the "タイプ" filter. */
+export function getVideoType(durationSec: number, liveBroadcastContent: string): VideoType {
+  if (liveBroadcastContent && liveBroadcastContent !== "none") return "live";
+  if (durationSec > 0 && durationSec <= 180) return "shorts";
+  return "normal";
 }
 
 /** Fetch the current "trending" chart for a region (falls back gracefully per-region on error). */

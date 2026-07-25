@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { getCategoryLabel } from "@/lib/youtube-categories";
 
 type Tab = "trending" | "velocity" | "overseas" | "growth" | "ideas";
 
@@ -13,6 +14,11 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 const REGIONS = ["ALL", "US", "GB", "IN", "JP", "KR", "TW"];
+const TYPES: { id: string; label: string }[] = [
+  { id: "", label: "通常" },
+  { id: "shorts", label: "ショート" },
+  { id: "live", label: "ライブ" },
+];
 
 type VideoRow = {
   id: string;
@@ -21,8 +27,12 @@ type VideoRow = {
   title: string;
   channelTitle: string;
   regionCode: string;
+  categoryId: string;
+  videoType: "live" | "shorts" | "normal";
   viewCount: number;
   vph: number;
+  vphMeasured: boolean;
+  snapshotCount: number;
   likeCount: number;
   commentCount: number;
   publishedAt: string | null;
@@ -74,9 +84,20 @@ function fmt(n: number): string {
   return numberFmt.format(Math.round(n));
 }
 
+function relativeTime(iso: string | null): string {
+  if (!iso) return "—";
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const hours = diffMs / 3_600_000;
+  if (hours < 1) return `${Math.max(Math.round(diffMs / 60_000), 1)}分前`;
+  if (hours < 24) return `${Math.round(hours)}時間前`;
+  return `${Math.round(hours / 24)}日前`;
+}
+
 export default function YoutubeResearchClient() {
   const [tab, setTab] = useState<Tab>("trending");
   const [region, setRegion] = useState("ALL");
+  const [type, setType] = useState("");
+  const [minViews, setMinViews] = useState("");
   const [q, setQ] = useState("");
   const [videos, setVideos] = useState<VideoRow[]>([]);
   const [growth, setGrowth] = useState<ChannelGrowthRow[]>([]);
@@ -94,6 +115,8 @@ export default function YoutubeResearchClient() {
       const params = new URLSearchParams({ sort });
       if (tab === "overseas" && region !== "ALL") params.set("region", region);
       if (q.trim()) params.set("q", q.trim());
+      if (type) params.set("type", type);
+      if (minViews.trim()) params.set("minViews", minViews.trim());
       const res = await fetch(`/api/youtube/videos?${params.toString()}`);
       if (!res.ok) throw new Error(`Failed to load videos (${res.status})`);
       setVideos(await res.json());
@@ -102,7 +125,7 @@ export default function YoutubeResearchClient() {
     } finally {
       setLoading(false);
     }
-  }, [tab, region, q]);
+  }, [tab, region, q, type, minViews]);
 
   const loadGrowth = useCallback(async () => {
     setLoading(true);
@@ -160,6 +183,13 @@ export default function YoutubeResearchClient() {
     } finally {
       setBusy(null);
     }
+  };
+
+  const resetFilters = () => {
+    setRegion("ALL");
+    setType("");
+    setMinViews("");
+    setQ("");
   };
 
   const generateIdea = async () => {
@@ -248,41 +278,82 @@ export default function YoutubeResearchClient() {
       </div>
 
       {isVideoTab && (
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && loadVideos()}
-            placeholder="Search title / channel..."
-            className="border px-3 py-2 text-sm bg-white/60 focus:outline-none"
-            style={{ borderColor: "#d8d0c0", minWidth: "220px" }}
-          />
-          <button
-            onClick={loadVideos}
-            className="px-3 py-2 text-xs tracking-widest uppercase hover:opacity-70"
-            style={{ color: "#2d5a3d", border: "1px solid #2d5a3d" }}
-          >
-            Search
-          </button>
-          {tab === "overseas" && (
-            <div className="flex flex-wrap gap-2 items-center ml-2">
-              <span className="text-xs tracking-widest uppercase opacity-40">Region</span>
-              {REGIONS.map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setRegion(r)}
-                  className="px-3 py-1.5 text-xs tracking-widest uppercase transition-opacity hover:opacity-80"
-                  style={
-                    region === r
-                      ? { backgroundColor: "#2d5a3d", color: "#f5f0e8" }
-                      : { backgroundColor: "#f5f0e8", color: "#2c2c2c", border: "1px solid #d8d0c0" }
-                  }
-                >
-                  {r === "ALL" ? "全地域" : r}
-                </button>
-              ))}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && loadVideos()}
+              placeholder="タイトル・チャンネル検索..."
+              className="border px-3 py-2 text-sm bg-white/60 focus:outline-none"
+              style={{ borderColor: "#d8d0c0", minWidth: "220px" }}
+            />
+
+            {tab === "overseas" && (
+              <div className="flex flex-wrap gap-2 items-center">
+                {REGIONS.map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRegion(r)}
+                    className="px-3 py-1.5 text-xs tracking-widest uppercase transition-opacity hover:opacity-80"
+                    style={
+                      region === r
+                        ? { backgroundColor: "#2d5a3d", color: "#f5f0e8" }
+                        : { backgroundColor: "#f5f0e8", color: "#2c2c2c", border: "1px solid #d8d0c0" }
+                    }
+                  >
+                    {r === "ALL" ? "全地域" : r}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center gap-1">
+              <span className="text-xs tracking-widest uppercase opacity-40">タイプ</span>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="border px-2 py-1.5 text-xs bg-white/60 focus:outline-none"
+                style={{ borderColor: "#d8d0c0" }}
+              >
+                {TYPES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
+
+            <div className="flex items-center gap-1">
+              <span className="text-xs tracking-widest uppercase opacity-40">再生数≥</span>
+              <input
+                value={minViews}
+                onChange={(e) => setMinViews(e.target.value.replace(/[^0-9]/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && loadVideos()}
+                placeholder="0"
+                className="border px-2 py-1.5 text-xs bg-white/60 focus:outline-none w-24"
+                style={{ borderColor: "#d8d0c0" }}
+              />
+            </div>
+
+            <button
+              onClick={loadVideos}
+              className="px-3 py-2 text-xs tracking-widest uppercase hover:opacity-70"
+              style={{ color: "#2d5a3d", border: "1px solid #2d5a3d" }}
+            >
+              検索
+            </button>
+            <button
+              onClick={resetFilters}
+              className="px-3 py-2 text-xs tracking-widest uppercase hover:opacity-70 opacity-60"
+            >
+              リセット
+            </button>
+          </div>
+
+          <p className="text-xs opacity-40">
+            公開7日以内の動画のみ。snapshotを2回以上実行するとVPHが実測(⚡)になります。
+          </p>
         </div>
       )}
 
@@ -332,18 +403,28 @@ function VideoTable({ rows, highlight }: { rows: VideoRow[]; highlight: "views" 
             className="text-left text-xs tracking-widest uppercase opacity-50"
             style={{ backgroundColor: "#ede8dc" }}
           >
-            <th className="p-3">Title / Channel</th>
-            <th className="p-3">Region</th>
-            <th className="p-3 text-right">Views</th>
+            <th className="p-3">サムネ</th>
+            <th className="p-3">タイトル / チャンネル</th>
+            <th className="p-3">地域</th>
+            <th className="p-3 text-right">再生数</th>
             <th className="p-3 text-right">VPH</th>
-            <th className="p-3 text-right">Likes</th>
-            <th className="p-3 text-right">Comments</th>
-            <th className="p-3">Published</th>
+            <th className="p-3 text-right">高評価</th>
+            <th className="p-3">公開</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((v) => (
-            <tr key={v.id} className="border-t" style={{ borderColor: "#d8d0c0" }}>
+            <tr key={v.id} className="border-t align-top" style={{ borderColor: "#d8d0c0" }}>
+              <td className="p-3">
+                <a href={`https://www.youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noopener noreferrer">
+                  {v.thumbnailUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={v.thumbnailUrl} alt="" className="w-28 aspect-video object-cover" />
+                  ) : (
+                    <div className="w-28 aspect-video" style={{ backgroundColor: "#d8d0c0" }} />
+                  )}
+                </a>
+              </td>
               <td className="p-3 max-w-md">
                 <a
                   href={`https://www.youtube.com/watch?v=${v.videoId}`}
@@ -354,6 +435,22 @@ function VideoTable({ rows, highlight }: { rows: VideoRow[]; highlight: "views" 
                   {v.title}
                 </a>
                 <div className="text-xs opacity-50 mt-0.5">{v.channelTitle}</div>
+                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                  {v.snapshotCount > 1 && (
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 tracking-wide"
+                      style={{ backgroundColor: "#2d5a3d", color: "#f5f0e8" }}
+                    >
+                      追跡中
+                    </span>
+                  )}
+                  {v.videoType !== "normal" && (
+                    <span className="text-[10px] px-1.5 py-0.5 tracking-wide border" style={{ borderColor: "#d8d0c0" }}>
+                      {v.videoType === "shorts" ? "ショート" : "ライブ"}
+                    </span>
+                  )}
+                  <span className="text-[10px] opacity-50">{getCategoryLabel(v.categoryId)}</span>
+                </div>
               </td>
               <td className="p-3 text-xs opacity-70">{v.regionCode}</td>
               <td
@@ -367,12 +464,12 @@ function VideoTable({ rows, highlight }: { rows: VideoRow[]; highlight: "views" 
                 style={highlight === "vph" ? { color: "#2d5a3d", fontWeight: 600 } : undefined}
               >
                 {fmt(v.vph)}
+                <span className="ml-1" title={v.vphMeasured ? "実測" : "推定"}>
+                  {v.vphMeasured ? "⚡" : ""}
+                </span>
               </td>
               <td className="p-3 text-right opacity-70">{fmt(v.likeCount)}</td>
-              <td className="p-3 text-right opacity-70">{fmt(v.commentCount)}</td>
-              <td className="p-3 text-xs opacity-50">
-                {v.publishedAt ? new Date(v.publishedAt).toISOString().slice(0, 10) : "—"}
-              </td>
+              <td className="p-3 text-xs opacity-50">{relativeTime(v.publishedAt)}</td>
             </tr>
           ))}
         </tbody>

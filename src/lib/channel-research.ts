@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { YtVideoSnapshot } from "@/generated/prisma/client";
 import {
   computeVph,
   fetchChannelsByIds,
@@ -64,6 +65,7 @@ export async function collectTrendingVideos(regions?: string[]): Promise<Collect
               video.snippet.thumbnails?.default?.url ??
               "",
             tags: (video.snippet.tags ?? []).slice(0, 20).join(","),
+            liveBroadcastContent: video.snippet.liveBroadcastContent || "none",
             vph: publishedAt ? computeVph(viewCount, publishedAt, now) : 0,
             fetchedAt: now,
           },
@@ -154,4 +156,43 @@ export async function getRapidlyGrowingChannels(
   }
 
   return growth.sort((a, b) => b.subscriberGrowthPerDay - a.subscriberGrowthPerDay).slice(0, limit);
+}
+
+export type VideoWithVelocity = YtVideoSnapshot & { vphMeasured: boolean; snapshotCount: number };
+
+/**
+ * Refine each video's VPH using its own snapshot history: once a video has been
+ * polled 2+ times, VPH becomes a MEASURED rate (view delta / time delta between the
+ * two latest snapshots) instead of the ESTIMATE (total views / hours-since-publish)
+ * stored at collection time.
+ */
+export async function attachVelocity(rows: YtVideoSnapshot[]): Promise<VideoWithVelocity[]> {
+  if (rows.length === 0) return [];
+
+  const videoIds = Array.from(new Set(rows.map((r) => r.videoId)));
+  const since = new Date(Date.now() - 14 * 86_400_000);
+  const history = await prisma.ytVideoSnapshot.findMany({
+    where: { videoId: { in: videoIds }, fetchedAt: { gte: since } },
+    orderBy: { fetchedAt: "asc" },
+    select: { videoId: true, viewCount: true, fetchedAt: true },
+  });
+
+  const byVideo = new Map<string, typeof history>();
+  for (const h of history) {
+    const list = byVideo.get(h.videoId) ?? [];
+    list.push(h);
+    byVideo.set(h.videoId, list);
+  }
+
+  return rows.map((row) => {
+    const list = byVideo.get(row.videoId) ?? [];
+    if (list.length >= 2) {
+      const prev = list[list.length - 2];
+      const last = list[list.length - 1];
+      const hours = Math.max((last.fetchedAt.getTime() - prev.fetchedAt.getTime()) / 3_600_000, 0.25);
+      const measuredVph = Math.max((last.viewCount - prev.viewCount) / hours, 0);
+      return { ...row, vph: measuredVph, vphMeasured: true, snapshotCount: list.length };
+    }
+    return { ...row, vphMeasured: false, snapshotCount: list.length || 1 };
+  });
 }

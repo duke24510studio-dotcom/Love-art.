@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getRapidlyGrowingChannels } from "@/lib/channel-research";
+import { attachVelocity, getRapidlyGrowingChannels } from "@/lib/channel-research";
+import { getVideoType } from "@/lib/youtube";
+import { getCategoryLabel } from "@/lib/youtube-categories";
 
 const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
 
@@ -11,27 +13,34 @@ async function videosCsv(): Promise<string> {
     orderBy: [{ videoId: "asc" }, { fetchedAt: "desc" }],
     distinct: ["videoId"],
   });
-  snapshots.sort((a, b) => b.vph - a.vph);
+  const withVelocity = await attachVelocity(snapshots);
+  withVelocity.sort((a, b) => b.vph - a.vph);
 
   const headers = [
     "title",
     "channelTitle",
     "regionCode",
+    "category",
+    "type",
     "viewCount",
     "vph",
+    "vphMeasured",
     "likeCount",
     "commentCount",
     "publishedAt",
     "videoUrl",
     "channelUrl",
   ];
-  const rows = snapshots.map((v) =>
+  const rows = withVelocity.map((v) =>
     [
       escape(v.title),
       escape(v.channelTitle),
       escape(v.regionCode),
+      escape(getCategoryLabel(v.categoryId)),
+      escape(getVideoType(v.durationSec, v.liveBroadcastContent)),
       escape(v.viewCount),
       escape(Math.round(v.vph)),
+      escape(v.vphMeasured ? "measured" : "estimated"),
       escape(v.likeCount),
       escape(v.commentCount),
       escape(v.publishedAt?.toISOString() ?? ""),

@@ -24,8 +24,11 @@ human in the loop before anything is built or published.
 ## Data model (Prisma)
 
 - **YtVideoSnapshot** — one polling snapshot of a trending video in a region
-  (title, channel, view/like/comment counts, `vph` = views-per-hour since
-  publish). History accumulates across runs.
+  (title, channel, category, duration, `liveBroadcastContent`, view/like/comment
+  counts, `vph` = views-per-hour). History accumulates across runs; once a
+  video has 2+ snapshots, `vph` is refined from an ESTIMATE (total views /
+  hours-since-publish) to a MEASURED rate (view delta / time delta between
+  its two latest snapshots) — see `attachVelocity()` in `src/lib/channel-research.ts`.
 - **YtChannelSnapshot** — one polling snapshot of a channel's public stats
   (subscribers, views, videos). Comparing two snapshots over time yields
   growth rate.
@@ -39,7 +42,7 @@ human in the loop before anything is built or published.
 | Method | Path | Role |
 |--------|------|------|
 | POST | `/api/youtube/collect` | Poll trending charts + channel stats for each region, store snapshots |
-| GET | `/api/youtube/videos` | Latest video snapshots (`region`, `sort=views\|vph`, `q` search) |
+| GET | `/api/youtube/videos` | Latest video snapshots (`region`, `sort=views\|vph`, `q` search, `type=shorts\|live`, `minViews`, `publishedWithinDays`, default 7) |
 | GET | `/api/youtube/channels` | Rapidly-growing channels (`days` lookback, `limit`) |
 | GET/POST | `/api/youtube/ideas` | List proposals / generate one from a trending video |
 | GET/PATCH/DELETE | `/api/youtube/ideas/[id]` | Fetch / approve-reject / delete a proposal |
@@ -76,5 +79,4 @@ CHANNEL_IDEA_MODEL=    # optional, default gpt-4o
 
 - Persist per-video rank-change history (not just views/VPH) for a true
   "急上昇" leaderboard delta view
-- Category-based filtering (YouTube `videoCategoryId`)
 - Duplicate-niche detection across approved `ChannelIdea` proposals
