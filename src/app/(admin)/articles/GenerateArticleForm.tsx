@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { GENRE_PRESETS } from "@/lib/genres";
+
 const DIRECTIONS = [
+  { value: "note", label: "→ note (ジャンル別)" },
   { value: "en2ja", label: "→ note (ランタン)" },
   { value: "stillflow", label: "→ note (still flow)" },
   { value: "econ", label: "→ note (知の翻訳室)" },
@@ -23,6 +26,7 @@ const inputStyle = {
 export default function GenerateArticleForm() {
   const router = useRouter();
   const [direction, setDirection] = useState<string>(DIRECTIONS[0].value);
+  const [genre, setGenre] = useState<string>("");
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -34,7 +38,11 @@ export default function GenerateArticleForm() {
       const res = await fetch("/api/articles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ direction, topic: topic.trim() || undefined }),
+        body: JSON.stringify({
+          direction,
+          genre: direction === "note" ? genre || undefined : undefined,
+          topic: topic.trim() || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate article");
@@ -66,6 +74,19 @@ export default function GenerateArticleForm() {
             ))}
           </select>
         </div>
+        {direction === "note" && (
+          <div className="space-y-1">
+            <label className="block text-xs tracking-widest uppercase opacity-60">ジャンル</label>
+            <select value={genre} onChange={(e) => setGenre(e.target.value)} style={inputStyle}>
+              <option value="">おまかせ（日替わり）</option>
+              {GENRE_PRESETS.map((g) => (
+                <option key={g.key} value={g.key}>
+                  {g.labelJa}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="space-y-1 flex-1 min-w-[220px]">
           <label className="block text-xs tracking-widest uppercase opacity-60">
             Topic (optional)

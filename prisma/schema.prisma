@@ -118,6 +118,9 @@ model Article {
   id             String   @id @default(cuid())
   researchItemId String?
   direction      String
+  // Only set when direction = "note" (the generic multi-genre channel).
+  // Key of a preset in src/lib/genres.ts, e.g. "sleep", "kakei", "work".
+  genre          String   @default("")
   category       String   @default("")
   // Output language: "ja" (note) or "en" (medium)
   language       String
@@ -126,6 +129,11 @@ model Article {
   title          String   @default("")
   subtitle       String   @default("")
   body           String   @default("")
+  // Body as first generated, kept when humanize passes rewrite `body` so the
+  // original is never lost (see src/lib/humanize.ts).
+  rawBody        String   @default("")
+  // Comma-separated labels of the humanize passes applied so far.
+  humanizeLog    String   @default("")
   tags           String   @default("")
   model          String   @default("")
   status         String   @default("generated")
@@ -133,6 +141,70 @@ model Article {
   updatedAt      DateTime @updatedAt
 
   researchItem ResearchItem? @relation(fields: [researchItemId], references: [id], onDelete: SetNull)
+  videos       VideoProject[]
+}
+
+// --- Article -> YouTube video studio ---
+// Turns a reviewed article draft (or a bare topic) into everything needed to
+// publish a YouTube video: a narration script split into scenes, one AI image
+// per scene, TTS narration audio, SRT captions, and the listing metadata
+// (title / description / tags / chapters). The final MP4/WebM is assembled in
+// the BROWSER at /videos/[id]/studio — Render's free plan has no ffmpeg and
+// only 512MB, so encoding server-side is not an option.
+// Uploading to YouTube stays manual and human-reviewed, like every other
+// pipeline in this app.
+model VideoProject {
+  id           String   @id @default(cuid())
+  articleId    String?
+  // "long" (16:9 narrated explainer) or "short" (9:16 vertical, under 60s)
+  format       String   @default("long")
+  // Key of a preset in src/lib/video-style.ts, e.g. "japandi", "aizuri"
+  visualStyle  String   @default("japandi")
+  // OpenAI TTS voice id used for narration
+  voice        String   @default("alloy")
+  genre        String   @default("")
+  topic        String   @default("")
+  // YouTube listing metadata
+  title        String   @default("")
+  description  String   @default("")
+  tags         String   @default("")
+  hook         String   @default("")
+  chapters     String   @default("")
+  thumbnailText   String @default("")
+  thumbnailPrompt String @default("")
+  thumbnailPath   String @default("")
+  model        String   @default("")
+  // "planned" -> "images" -> "narrated" -> "ready" -> "published" / "rejected"
+  status       String   @default("planned")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  article Article?    @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  scenes  VideoScene[]
+}
+
+// One scene of a VideoProject: a chunk of narration plus the still image and
+// audio rendered for it. `index` is the playback order.
+model VideoScene {
+  id           String   @id @default(cuid())
+  projectId    String
+  index        Int
+  heading      String   @default("")
+  narration    String   @default("")
+  onScreenText String   @default("")
+  imagePrompt  String   @default("")
+  imagePath    String   @default("")
+  audioPath    String   @default("")
+  // Measured duration of the narration audio; 0 until narration is generated.
+  audioSeconds Float    @default(0)
+  // Planned duration, used when there is no narration audio.
+  seconds      Int      @default(6)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  project VideoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, index])
 }
 
 // --- Rakuten affiliate review studio ---

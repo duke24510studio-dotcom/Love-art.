@@ -30,6 +30,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link href="/products" className="hover:opacity-70 transition-opacity uppercase font-light">
               Rakuten Reviews
             </Link>
+            <Link href="/videos" className="hover:opacity-70 transition-opacity uppercase font-light">
+              YouTube
+            </Link>
             <Link href="/blog-posts" className="hover:opacity-70 transition-opacity uppercase font-light">
               Blog CMS
             </Link>

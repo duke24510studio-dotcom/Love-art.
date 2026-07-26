@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getOpenAIClient } from "@/lib/openai";
+import { getGenre, pickGenreTopic, pickRotatingGenre, type GenrePreset } from "@/lib/genres";
 import type { Article, ResearchItem } from "@/generated/prisma/client";
 
 // Each "direction" is really a publishing channel with its own editorial voice.
@@ -7,9 +8,18 @@ import type { Article, ResearchItem } from "@/generated/prisma/client";
 //   ja2en     -> Medium (Japanese culture for international readers)
 //   stillflow -> note "still flow / 円相" (Zen x Western philosophy essays)
 //   econ      -> note (behavioral economics / marketing / overseas business practices, explained plainly)
-export type ArticleDirection = "en2ja" | "ja2en" | "stillflow" | "econ";
+//   note      -> note, GENERIC multi-genre channel; the editorial voice comes
+//                from an ArticleGenre preset (src/lib/genres.ts) instead of
+//                being baked into one fixed system prompt.
+export type ArticleDirection = "en2ja" | "ja2en" | "stillflow" | "econ" | "note";
 
-export const ARTICLE_DIRECTIONS: ArticleDirection[] = ["en2ja", "ja2en", "stillflow", "econ"];
+export const ARTICLE_DIRECTIONS: ArticleDirection[] = [
+  "en2ja",
+  "ja2en",
+  "stillflow",
+  "econ",
+  "note",
+];
 
 export function isArticleDirection(value: unknown): value is ArticleDirection {
   return typeof value === "string" && (ARTICLE_DIRECTIONS as string[]).includes(value);
@@ -54,6 +64,9 @@ export const FALLBACK_TOPICS: Record<ArticleDirection, { topic: string; category
     { topic: "「サンクコスト」に引きずられない、やめる判断の技術", category: "behavioral-economics" },
     { topic: "マーケティングの基本「STP」を、身近な例で理解する", category: "marketing" },
   ],
+  // The generic note channel takes its fallback topics from the genre preset
+  // instead (see pickFallbackTopic).
+  note: [],
 };
 
 const SYSTEM_EN2JA = `You are a Japanese writer who publishes original articles on note (note.com). Your editorial identity: a quiet, life-coach-like voice that blends GLOBAL trends (AI, work culture, wellbeing, lifehacks from overseas) with ZEN wisdom and mindfulness rooted in the Japanese spirit. You help readers live richer, calmer lives in the AI era — you are the opposite of hype-driven "AI info" sellers.
@@ -142,11 +155,46 @@ Respond with valid JSON only, no markdown fences:
   "tags": "5-8 comma-separated Japanese note hashtags without #, mixing e.g. 行動経済学, マーケティング, ビジネス, 経済の勉強 with the topic"
 }`;
 
+/**
+ * System prompt for the generic multi-genre note channel. Everything that
+ * varies between genres comes from the preset; the shared rules (originality,
+ * no fabrication, no funnelling, disclosure line) are identical to the fixed
+ * channels above.
+ */
+function buildGenreSystemPrompt(genre: GenrePreset): string {
+  return `You are a Japanese writer who publishes original articles on note (note.com) in the "${genre.labelJa}" genre (${genre.descriptionJa}).
+
+Writer identity: ${genre.persona}
+
+You will be given a topic (sometimes with a headline and short summary collected from public feeds). Use it ONLY as inspiration.
+
+STRICT RULES:
+- Write a COMPLETELY ORIGINAL article in natural Japanese. Do NOT translate, reproduce, summarize, or closely paraphrase any existing article.
+- Do not mention or link to the source article, its author, or its publication.
+- Structure: ${genre.structure}
+- Reader level: assume no specialist knowledge. Unpack any technical term in plain Japanese the first time it appears (give the kana reading for kanji jargon).
+- Write from lived, concrete detail — specific scenes, times of day, objects, small failures. Avoid abstract generalities and listicle padding.
+- Accuracy: never fabricate statistics, studies, named researchers, product specs, prices, or personal experiences presented as verified fact. When referring to a well-known idea, attribute it generally ("〜と言われています") rather than inventing citations.
+- Tone: warm and grounded, written with humility. NEVER: clickbait, fear-based urgency, "this will change your life" hype, selling or funnelling to any product / LINE group / course / paid community, unrealistic income claims, or advice presented as professional medical, legal, or financial treatment.
+- Genre-specific cautions (these override everything else): ${genre.cautions}
+- Length: roughly 1500-2200 Japanese characters, in Markdown with section headings.
+- End the body with this exact disclosure line: "${ARTICLE_DISCLOSURE_JA}"
+
+Respond with valid JSON only, no markdown fences:
+{
+  "title": "Japanese title, concrete and honest, max 60 chars — no clickbait",
+  "subtitle": "one-line Japanese subtitle",
+  "body": "full article body in Markdown (Japanese)",
+  "tags": "5-8 comma-separated Japanese note hashtags without #, mixing e.g. ${genre.tagSeeds} with the topic"
+}`;
+}
+
 type ChannelConfig = {
   language: string;
   targetPlatform: string;
   disclosure: string;
-  systemPrompt: string;
+  /** Fixed channels ignore the genre argument; the "note" channel needs it. */
+  systemPrompt: (genre: GenrePreset | null) => string;
 };
 
 const CHANNELS: Record<ArticleDirection, ChannelConfig> = {
@@ -154,25 +202,31 @@ const CHANNELS: Record<ArticleDirection, ChannelConfig> = {
     language: "ja",
     targetPlatform: "note",
     disclosure: ARTICLE_DISCLOSURE_JA,
-    systemPrompt: SYSTEM_EN2JA,
+    systemPrompt: () => SYSTEM_EN2JA,
   },
   ja2en: {
     language: "en",
     targetPlatform: "medium",
     disclosure: ARTICLE_DISCLOSURE_EN,
-    systemPrompt: SYSTEM_JA2EN,
+    systemPrompt: () => SYSTEM_JA2EN,
   },
   stillflow: {
     language: "ja",
     targetPlatform: "note",
     disclosure: ARTICLE_DISCLOSURE_JA,
-    systemPrompt: SYSTEM_STILLFLOW,
+    systemPrompt: () => SYSTEM_STILLFLOW,
   },
   econ: {
     language: "ja",
     targetPlatform: "note",
     disclosure: ARTICLE_DISCLOSURE_JA,
-    systemPrompt: SYSTEM_ECON,
+    systemPrompt: () => SYSTEM_ECON,
+  },
+  note: {
+    language: "ja",
+    targetPlatform: "note",
+    disclosure: ARTICLE_DISCLOSURE_JA,
+    systemPrompt: (genre) => buildGenreSystemPrompt(genre ?? pickRotatingGenre()),
   },
 };
 
@@ -209,16 +263,22 @@ export type GenerateArticleInput = {
   researchItem?: ResearchItem | null;
   topic?: string;
   category?: string;
+  /** Only used by the generic "note" channel; ignored by the fixed channels. */
+  genre?: string;
 };
 
 /** Generate one original draft and persist it. Marks the research item as used. */
 export async function generateArticleDraft(input: GenerateArticleInput): Promise<Article> {
   const { direction, researchItem } = input;
-  const topic = input.topic?.trim() || researchItem?.title || "";
+  const genre =
+    direction === "note" ? getGenre(input.genre ?? "") ?? pickRotatingGenre() : null;
+
+  const topic =
+    input.topic?.trim() || researchItem?.title || (genre ? pickGenreTopic(genre.key) : "");
   if (!topic) {
     throw new Error("Either topic or researchItem is required");
   }
-  const category = input.category || researchItem?.category || "";
+  const category = input.category || researchItem?.category || genre?.key || "";
 
   const userPrompt = [
     `Inspiration topic: ${topic}`,
@@ -235,7 +295,7 @@ export async function generateArticleDraft(input: GenerateArticleInput): Promise
   const completion = await openai.chat.completions.create({
     model,
     messages: [
-      { role: "system", content: channel.systemPrompt },
+      { role: "system", content: channel.systemPrompt(genre) },
       { role: "user", content: userPrompt },
     ],
     temperature: 0.8,
@@ -252,6 +312,7 @@ export async function generateArticleDraft(input: GenerateArticleInput): Promise
     data: {
       researchItemId: researchItem?.id ?? null,
       direction,
+      genre: genre?.key ?? "",
       category,
       language: channel.language,
       targetPlatform: channel.targetPlatform,
@@ -284,7 +345,14 @@ export async function pickResearchItem(direction: ArticleDirection): Promise<Res
 }
 
 /** Rotate through fallback topics so consecutive runs vary. */
-export function pickFallbackTopic(direction: ArticleDirection): { topic: string; category: string } {
+export function pickFallbackTopic(
+  direction: ArticleDirection,
+  genreKey?: string
+): { topic: string; category: string } {
+  if (direction === "note") {
+    const genre = getGenre(genreKey ?? "") ?? pickRotatingGenre();
+    return { topic: pickGenreTopic(genre.key), category: genre.key };
+  }
   const topics = FALLBACK_TOPICS[direction];
   return topics[Math.floor(Date.now() / (3 * 60 * 60 * 1000)) % topics.length];
 }
