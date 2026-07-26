@@ -3,13 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 // The (admin) tool (dashboard, posters, articles, Rakuten review studio,
 // multiview) has delete buttons and buttons that trigger paid OpenAI calls —
 // it must never be reachable on the open internet without credentials. Only
-// the public blog (and the static assets it needs) is allowed through.
+// the public blog, the public storefront, and the static assets they need
+// are allowed through.
 // /api/cron/* is also exempt from Basic Auth: those routes carry their own
 // Bearer CRON_SECRET check (and fail closed if CRON_SECRET is unset), and the
 // external GitHub Actions cron sends a Bearer header, not Basic auth — without
 // this exemption the daily pipelines 401 here before ever reaching that check.
 const PUBLIC_PATH_PATTERNS = [
   /^\/blog(\/|$)/,
+  // The digital-product storefront. Read-only pages only — the shop CMS
+  // lives at /shop-admin and its writes go through /api/shop/*, both of
+  // which stay behind Basic Auth.
+  /^\/shop(\/|$)/,
   /^\/api\/static\//,
   /^\/outputs\//,
   /^\/favicon\.ico$/,

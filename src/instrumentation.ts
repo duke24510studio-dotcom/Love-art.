@@ -29,4 +29,11 @@ export async function register() {
   } catch (err) {
     console.error("[seed] startup blog seed failed:", err);
   }
+
+  try {
+    const { seedShopIfEmpty } = await import("@/lib/seed-shop");
+    await seedShopIfEmpty();
+  } catch (err) {
+    console.error("[seed] startup shop seed failed:", err);
+  }
 }
