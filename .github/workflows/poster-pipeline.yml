@@ -15,6 +15,14 @@ name: Poster Pipeline
 # one call per poster keeps each request small and means partial progress
 # (earlier posters) is saved even if a later call fails.
 #
+# Even split into 1-per-request, a 502 was reproduced on the 2nd call — the
+# free-tier instance had just crashed/OOM'd on that call, and Render was
+# still restarting when the 3rd call landed immediately after (also 502).
+# One retry with a cooldown gives Render time to finish restarting before
+# giving up on that poster. If 502s persist, consider lowering
+# POSTER_IMAGE_QUALITY (e.g. to "medium") to shrink the base image and cut
+# memory pressure further.
+#
 # Required repository secrets:
 #   APP_URL      e.g. https://japandi-poster-studio.onrender.com (no trailing slash)
 #   CRON_SECRET  same value as the CRON_SECRET env var on the server
@@ -60,10 +68,22 @@ jobs:
 
             body="{\"count\": 1, \"orientation\": \"${orientation}\"}"
             echo "POST ${APP_URL}/api/cron/posters ${body}"
-            curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/posters" \
+            if ! curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/posters" \
               -H "Authorization: Bearer ${CRON_SECRET}" \
               -H "Content-Type: application/json" \
-              -d "${body}" || status=1
+              -d "${body}"; then
+              echo
+              echo "First attempt failed — waiting 45s for the instance to recover, then retrying once..."
+              sleep 45
+              curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/posters" \
+                -H "Authorization: Bearer ${CRON_SECRET}" \
+                -H "Content-Type: application/json" \
+                -d "${body}" || status=1
+            fi
             echo
+            # Brief cooldown between posters even on success, so the next
+            # request doesn't land while memory from this one is still
+            # being reclaimed.
+            sleep 10
           done
           exit $status
