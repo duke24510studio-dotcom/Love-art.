@@ -6,6 +6,15 @@ name: Poster Pipeline
 # export stays human-reviewed at /posters. See docs/ARTICLE_PIPELINE.md for
 # the shared cron/secret setup.
 #
+# One poster per HTTP request: even with UPSCALE_SCALE=2 (see render.yaml),
+# a single request generating 3 posters back-to-back (3x gpt-image-1 calls +
+# 3x sharp upscales + 3x Postgres image writes) was reproduced 502ing mid-
+# request on the free plan — confirmed live on 2026-07-29 after the
+# UPSCALE_SCALE=2 and Postgres-connection-keepalive fixes were already in
+# place, so the combined per-request work was still too much. Splitting into
+# one call per poster keeps each request small and means partial progress
+# (earlier posters) is saved even if a later call fails.
+#
 # Required repository secrets:
 #   APP_URL      e.g. https://japandi-poster-studio.onrender.com (no trailing slash)
 #   CRON_SECRET  same value as the CRON_SECRET env var on the server
@@ -28,20 +37,33 @@ jobs:
   run-posters:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger poster pipeline
+      - name: Trigger poster pipeline (one request per poster)
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           COUNT: ${{ inputs.count || '3' }}
-          ORIENTATION: ${{ inputs.orientation || 'mixed' }}
+          ORIENTATION_INPUT: ${{ inputs.orientation || 'mixed' }}
         run: |
           if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
             echo "APP_URL / CRON_SECRET secrets are not set; skipping."
             exit 0
           fi
-          body="{\"count\": ${COUNT}, \"orientation\": \"${ORIENTATION}\"}"
-          echo "POST ${APP_URL}/api/cron/posters ${body}"
-          curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/posters" \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Content-Type: application/json" \
-            -d "${body}"
+
+          status=0
+          for i in $(seq 0 $((COUNT - 1))); do
+            if [ "$ORIENTATION_INPUT" = "mixed" ]; then
+              # Mirror the server's 1-in-3-landscape rule across this run.
+              if [ $((i % 3)) -eq 2 ]; then orientation="landscape"; else orientation="portrait"; fi
+            else
+              orientation="$ORIENTATION_INPUT"
+            fi
+
+            body="{\"count\": 1, \"orientation\": \"${orientation}\"}"
+            echo "POST ${APP_URL}/api/cron/posters ${body}"
+            curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/posters" \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -H "Content-Type: application/json" \
+              -d "${body}" || status=1
+            echo
+          done
+          exit $status
