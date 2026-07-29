@@ -16,3 +16,12 @@ export function getOutputImagesDir(): string {
     ? `${process.env.OUTPUT_DIR.replace(/\/$/, "")}/images`
     : "outputs/images";
 }
+
+/**
+ * Narration audio for the video studio. Deliberately a subdirectory of the
+ * images dir so the existing /api/static/[...file] route serves it with no new
+ * plumbing — these are asset paths in the blob store, not real files.
+ */
+export function getOutputAudioDir(): string {
+  return `${getOutputImagesDir()}/narration`;
+}

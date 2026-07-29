@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getGenreLabel } from "@/lib/genres";
 import GenerateArticleForm from "./GenerateArticleForm";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -19,6 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const DIRECTION_LABELS: Record<string, string> = {
+  note: "→ note (ジャンル別)",
   en2ja: "→ note (ランタン)",
   stillflow: "→ note (still flow)",
   econ: "→ note (知の翻訳室)",
@@ -66,7 +68,7 @@ export default async function ArticlesPage({
       <div className="flex flex-wrap gap-4 text-xs tracking-widest uppercase">
         <div className="flex gap-2 items-center">
           <span className="opacity-40">Direction:</span>
-          {[undefined, "en2ja", "stillflow", "econ", "ja2en"].map((d) => (
+          {[undefined, "note", "en2ja", "stillflow", "econ", "ja2en"].map((d) => (
             <Link
               key={d ?? "all"}
               href={filterLink({ direction: d })}
@@ -123,7 +125,10 @@ export default async function ArticlesPage({
                   <div className="text-xs opacity-60 mt-1 truncate">{article.subtitle}</div>
                   <div className="text-xs opacity-40 mt-2 tracking-widest uppercase">
                     {DIRECTION_LABELS[article.direction] ?? article.direction}
-                    {article.category ? ` · ${article.category}` : ""}
+                    {article.genre ? ` · ${getGenreLabel(article.genre)}` : ""}
+                    {article.category && article.category !== article.genre
+                      ? ` · ${article.category}`
+                      : ""}
                     {" · "}
                     {new Date(article.createdAt).toISOString().slice(0, 10)}
                   </div>

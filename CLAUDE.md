@@ -139,6 +139,48 @@ See docs/ARTICLE_PIPELINE.md for full design.
 - External cron hits POST /api/cron/pipeline (Bearer CRON_SECRET); GitHub Actions workflow runs it daily (1 draft each for en2ja + stillflow + econ)
 - Article status flow: generated → review → approved → published / rejected
 
+## Multi-Genre note Channel + Humanize Passes
+
+See docs/VIDEO_PIPELINE.md (sections ① and ②) for full design.
+
+- `direction = "note"` is a GENERIC note channel whose editorial voice comes from a genre
+  preset in `src/lib/genres.ts` (12 genres: 暮らし / 睡眠 / 家計 / 仕事術 / AI道具 / 読書 /
+  こころ / 食 / 旅 / 子育て / 趣味 / 片づけ). The four original channels (en2ja, stillflow,
+  econ, ja2en) keep their fixed system prompts. `Article.genre` stores the preset key; with
+  no genre given, `pickRotatingGenre()` cycles one per day.
+- Each preset carries genre-specific `cautions` that override the general rules — e.g. the
+  sleep genre forbids diagnosis/treatment advice, the money genre forbids investment
+  recommendations or funnelling to courses. Gambling / dating / adult / night-work /
+  spiritual-claim genres are deliberately absent (same prohibited-genre list as docs/BLOG.md).
+- `src/lib/humanize-passes.ts` holds 8 sequential prose-editing passes (編集長 / 人間化 /
+  型くずし / 語りかけ / 体温 / 地声 / リズム / 仕上げ), applied via
+  `POST /api/articles/[id]/humanize`. **These are prose-quality passes, not AI-detector
+  evasion**: every pass is required to preserve the AI-disclosure line, `restoreDisclosure()`
+  re-appends it server-side if a pass drops it, and adding facts/statistics is forbidden. The
+  pre-edit draft is kept in `Article.rawBody` so `DELETE` on the same route restores it.
+
+## Article → YouTube Video Pipeline
+
+See docs/VIDEO_PIPELINE.md for full design.
+
+- `VideoProject` / `VideoScene`: a narration script split into scenes, one AI still per scene,
+  OpenAI TTS narration, SRT captions, and the YouTube listing metadata (title / description /
+  tags / chapters / thumbnail). Built from an approved `Article`, or from a bare topic.
+- Formats: `long` (16:9, 10-14 scenes, ~4-6 min) and `short` (9:16, 5-7 scenes, under 60s).
+  Visual styles in `src/lib/video-style.ts`. Scene images contain NO text — every caption is
+  drawn by the browser renderer on top, so it stays crisp and editable.
+- **The final encode happens in the BROWSER** at `/videos/[id]/studio` (Canvas +
+  MediaRecorder → WebM/VP9): Render's free plan has no ffmpeg and 512MB, so server-side
+  encoding is not an option. Recording runs in real time and the tab must stay visible.
+- Narration mp3s live in the `ImageAsset` blob store under `outputs/images/narration/`;
+  durations are measured by parsing MPEG frame headers (`src/lib/mp3-duration.ts`) rather
+  than shelling out to ffmpeg.
+- Cron: `POST /api/cron/videos` (Bearer `CRON_SECRET`) turns approved articles into video
+  plans. No auto-upload to YouTube — the reviewed video is uploaded by hand.
+- Client components must import video constants from `src/lib/video-presets.ts` (pure) and
+  pass definitions from `src/lib/humanize-passes.ts`, never from `video.ts` / `humanize.ts` —
+  those pull Prisma and the OpenAI SDK into the browser bundle and break the build.
+
 ## Poster Pipeline (Hokusai aizuri-e auto-generation)
 
 - Daily cron generates original Hokusai-style aizuri-e (indigo ukiyo-e) poster images (default 3)
@@ -188,9 +230,9 @@ See docs/BLOG.md for full design.
 - Seed content lives in `src/lib/blog.ts` (`SEED_BLOG_POSTS`) and auto-seeds on first server
   startup via `src/instrumentation.ts` (same pattern as poster themes) — a fresh Render deploy
   has articles immediately, no manual step required.
-- **The rest of the app (`/`, `/posters`, `/articles`, `/products`, `/youtube-multiview` and their
-  APIs) has delete buttons and buttons that trigger paid OpenAI calls — it must never be publicly
-  reachable without credentials.** `src/proxy.ts` Basic-Auth-protects everything except
+- **The rest of the app (`/`, `/posters`, `/articles`, `/products`, `/videos`,
+  `/youtube-multiview` and their APIs) has delete buttons and buttons that trigger paid OpenAI
+  calls — it must never be publicly reachable without credentials.** `src/proxy.ts` Basic-Auth-protects everything except
   `/blog`, `/api/static`, `/outputs`; in production it 503s the admin tool if
   `ADMIN_BASIC_USER`/`ADMIN_BASIC_PASS` aren't set, rather than leaving it open.
 - `render.yaml` `healthCheckPath` is `/blog` (not `/`, which is auth-protected).

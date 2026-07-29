@@ -1,10 +1,16 @@
 import { prisma } from "@/lib/prisma";
 
+// The table is called ImageAsset for historical reasons, but it is really the
+// app's binary blob store — narration audio for the video studio lives here too
+// (see src/lib/tts.ts).
 const CONTENT_TYPES: Record<string, string> = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".webp": "image/webp",
+  ".mp3": "audio/mpeg",
+  ".m4a": "audio/mp4",
+  ".wav": "audio/wav",
 };
 
 function contentTypeFor(relativePath: string): string {

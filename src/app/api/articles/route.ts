@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
+  ARTICLE_DIRECTIONS,
   generateArticleDraft,
   isArticleDirection,
   pickFallbackTopic,
   pickResearchItem,
 } from "@/lib/article";
+import { isGenreKey } from "@/lib/genres";
+
+// Article generation is a single long OpenAI call.
+export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -31,9 +36,14 @@ export async function POST(req: NextRequest) {
     const direction = body.direction;
     if (!isArticleDirection(direction)) {
       return NextResponse.json(
-        { error: "direction must be 'en2ja', 'ja2en', or 'stillflow'" },
+        { error: `direction must be one of: ${ARTICLE_DIRECTIONS.join(", ")}` },
         { status: 400 }
       );
+    }
+
+    const genre = (body.genre as string | undefined)?.trim() || "";
+    if (direction === "note" && genre && !isGenreKey(genre)) {
+      return NextResponse.json({ error: `Unknown genre: ${genre}` }, { status: 400 });
     }
 
     // Explicit topic > specific research item > next unused item > fallback topic
@@ -53,13 +63,19 @@ export async function POST(req: NextRequest) {
         researchItem = await pickResearchItem(direction);
       }
       if (!researchItem) {
-        const fallback = pickFallbackTopic(direction);
+        const fallback = pickFallbackTopic(direction, genre);
         topic = fallback.topic;
         category = category || fallback.category;
       }
     }
 
-    const article = await generateArticleDraft({ direction, researchItem, topic, category });
+    const article = await generateArticleDraft({
+      direction,
+      researchItem,
+      topic,
+      category,
+      genre,
+    });
     return NextResponse.json({ article }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Article generation failed";
