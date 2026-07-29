@@ -151,6 +151,23 @@ See docs/ARTICLE_PIPELINE.md for full design.
 - Themes/prompts in src/lib/hokusai.ts (original compositions only, no reproduction of existing prints); image render shared via src/lib/poster-image.ts
 - Images only — approval/export stays human-reviewed at /posters
 
+## NDL Reference Image Downloader (`npm run ndl:download`)
+
+- `scripts/ndl-download.mjs` fetches public-domain scans from the National Diet Library via its
+  official **IIIF** APIs (Presentation + Image API) — not HTML scraping. See the script header for
+  full usage; `--dry-run` first.
+- NDL only serves IIIF for items published as インターネット公開（保護期間満了）, i.e. out of
+  copyright; restricted items have no manifest and 404. Confirm an item's rights statement before
+  reusing a scan.
+- Handles both Presentation API 2.x and 3.x manifest shapes, and falls back across the `full`/`max`
+  Image API size spellings. Downloads run strictly sequentially with a delay (default 1500ms) and
+  back off on 429/5xx — this is a public library's infrastructure, keep the delay generous.
+- Saves to `outputs/ndl/<PID>/` (local disk, outside the app's Postgres image store) with
+  `manifest.json` + `metadata.json` recording source URL, attribution, and license. Resumable:
+  existing files are skipped unless `--overwrite`.
+- **These are reference/study material.** The poster pipeline above stays original-composition-only
+  — do not feed NDL scans in as something to reproduce.
+
 ## Rakuten Affiliate Review Pipeline
 
 See docs/RAKUTEN_REVIEW_PIPELINE.md for full design.
