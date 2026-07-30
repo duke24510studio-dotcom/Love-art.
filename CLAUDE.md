@@ -141,8 +141,18 @@ See docs/ARTICLE_PIPELINE.md for full design.
 
 ## Poster Pipeline (Hokusai aizuri-e auto-generation)
 
-- Daily cron generates original Hokusai-style aizuri-e (indigo ukiyo-e) poster images (default 3)
-- POST /api/cron/posters (Bearer CRON_SECRET); GitHub Actions workflow runs it daily at 12:15 UTC (21:15 JST), calling the endpoint once PER POSTER (count=1 each) — even with UPSCALE_SCALE=2, a single request generating 3 posters back-to-back was reproduced 502ing mid-request on the free plan (confirmed 2026-07-29). Even 1-per-request, the 2nd call 502'd (instance crashed/restarting) — the workflow now retries once after a 45s cooldown and pauses 10s between posters. If 502s keep recurring, try lowering POSTER_IMAGE_QUALITY (e.g. "medium") to shrink the base image, or upgrade the Render plan (free tier's 512MB appears to be the real ceiling)
+- **Automatic daily generation is DISABLED as of 2026-07-30.** The `schedule:` trigger was removed
+  from `.github/workflows/poster-pipeline.yml`; the workflow is manual-only (`workflow_dispatch`)
+  now. Reason: every run from 2026-07-29 onward failed on Render's free plan — the 502s below kept
+  recurring even at one poster per request with a retry, and run #20 ran 5h29m without producing
+  posters. Leaving the cron on would keep burning OpenAI spend and Actions minutes for nothing.
+  Re-add the `schedule:` block only after the instance can finish a poster reliably (lower
+  POSTER_IMAGE_QUALITY, or move off the free 512MB plan)
+- POST /api/cron/posters (Bearer CRON_SECRET); the workflow calls the endpoint once PER POSTER
+  (count=1 each) — even with UPSCALE_SCALE=2, a single request generating 3 posters back-to-back was
+  reproduced 502ing mid-request on the free plan (confirmed 2026-07-29). Even 1-per-request, the 2nd
+  call 502'd (instance crashed/restarting), so the workflow retries once after a 45s cooldown and
+  pauses 10s between posters. Manual generation from /posters is unaffected
 - Orientation: "portrait" (2:3 wall art), "landscape" (16:9 — YouTube thumbnails/banners, EC hero images), or "mixed" (default: 1-in-3 landscape)
 - Image model configurable via POSTER_IMAGE_MODEL (default gpt-image-1; dall-e-3 fallback), quality via POSTER_IMAGE_QUALITY
 - Print-resolution upscale (src/lib/upscale.ts, code default 4x via sharp; `UPSCALE_SCALE=2` set in

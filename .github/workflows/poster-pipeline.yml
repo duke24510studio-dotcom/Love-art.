@@ -23,13 +23,22 @@ name: Poster Pipeline
 # POSTER_IMAGE_QUALITY (e.g. to "medium") to shrink the base image and cut
 # memory pressure further.
 #
+# DAILY SCHEDULE IS OFF (2026-07-30). Every scheduled/manual run since
+# 2026-07-29 failed on the free plan — the 502s above kept recurring even
+# 1-per-request-with-retry, and run #20 hung for 5h29m before the job was
+# cut off. Rather than burn OpenAI spend and Actions minutes on runs that
+# don't produce posters, the cron trigger is removed; only manual
+# workflow_dispatch remains. Re-add the `schedule:` block below once the
+# instance can actually finish a poster (lower POSTER_IMAGE_QUALITY, or
+# upgrade off the free 512MB plan):
+#   schedule:
+#     - cron: "15 12 * * *" # daily at 12:15 UTC (21:15 JST)
+#
 # Required repository secrets:
 #   APP_URL      e.g. https://japandi-poster-studio.onrender.com (no trailing slash)
 #   CRON_SECRET  same value as the CRON_SECRET env var on the server
 
 on:
-  schedule:
-    - cron: "15 12 * * *" # daily at 12:15 UTC (21:15 JST), staggered after articles
   workflow_dispatch:
     inputs:
       count:
@@ -68,7 +77,9 @@ jobs:
 
             body="{\"count\": 1, \"orientation\": \"${orientation}\"}"
             echo "POST ${APP_URL}/api/cron/posters ${body}"
-            if ! curl --fail-with-body -sS -X POST "${APP_URL}/api/cron/posters" \
+            # --max-time: run #20 hung for 5h29m on a request that never
+            # returned, so never let a single call block the job indefinitely.
+            if ! curl --fail-with-body -sS --max-time 600 -X POST "${APP_URL}/api/cron/posters" \
               -H "Authorization: Bearer ${CRON_SECRET}" \
               -H "Content-Type: application/json" \
               -d "${body}"; then
