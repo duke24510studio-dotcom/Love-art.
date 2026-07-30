@@ -28,8 +28,11 @@ name: Poster Pipeline
 #   CRON_SECRET  same value as the CRON_SECRET env var on the server
 
 on:
-  schedule:
-    - cron: "15 12 * * *" # daily at 12:15 UTC (21:15 JST), staggered after articles
+  # PAUSED 2026-07-29: the OpenAI API key was deleted (billing stopped), so
+  # scheduled runs would just fail daily. Manual runs still work via
+  # workflow_dispatch once a key is set again. Uncomment to resume:
+  # schedule:
+  #   - cron: "15 12 * * *" # daily at 12:15 UTC (21:15 JST), staggered after articles
   workflow_dispatch:
     inputs:
       count:
