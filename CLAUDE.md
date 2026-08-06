@@ -177,7 +177,8 @@ See docs/RAKUTEN_REVIEW_PIPELINE.md for full design.
 
 See docs/BLOG.md for full design.
 
-- `/blog` is the ONLY public, unauthenticated part of this app — a small original buying-guide
+- `/blog` and `/shop` (see below) are the only public, unauthenticated parts of this app.
+  `/blog` is a small original buying-guide
   blog ("茶と暮らしの手帖", tea & food-gift genre) whose purpose is to give affiliate-program
   applications (e.g. Rakuten Affiliate) a real, substantive site URL to submit for review.
 - `BlogPost` is a separate model from `Article` (external-platform drafts) and `ProductReview`
@@ -191,13 +192,44 @@ See docs/BLOG.md for full design.
 - **The rest of the app (`/`, `/posters`, `/articles`, `/products`, `/youtube-multiview` and their
   APIs) has delete buttons and buttons that trigger paid OpenAI calls — it must never be publicly
   reachable without credentials.** `src/proxy.ts` Basic-Auth-protects everything except
-  `/blog`, `/api/static`, `/outputs`; in production it 503s the admin tool if
+  `/blog`, `/shop`, `/api/static`, `/outputs`; in production it 503s the admin tool if
   `ADMIN_BASIC_USER`/`ADMIN_BASIC_PASS` aren't set, rather than leaving it open.
 - `render.yaml` `healthCheckPath` is `/blog` (not `/`, which is auth-protected).
 - Content is managed from the admin-side CMS at `/blog-posts` (list/new/edit/publish/delete,
   `src/app/api/blog/`) — deliberately a different path from the public `/blog` to avoid a route
   collision. The CMS does not auto-enforce the content policy above (no auto PR/AI-disclosure
   injection) — review each post against it before publishing.
+
+## Digital Product Shop (`/shop`) — 「余白 / YOHAKU STUDIO」
+
+See docs/SHOP.md for full design.
+
+- Public storefront + portfolio for the studio's own digital goods (Notion templates, digital
+  art, illustration sets, poster downloads) — the place generated assets get listed and sold.
+- **No payments in this app.** Each `DigitalProduct` carries an external `checkoutUrl`
+  (Gumroad / BOOTH / Stripe Payment Link) that handles payment, file delivery and the
+  legally-required seller disclosure. No cart, no orders, no card data. A product with no
+  `checkoutUrl` renders "Coming soon" instead of a dead buy button.
+- Nothing is listed automatically — a human picks the asset, writes the copy, and toggles
+  `published` in the CMS.
+- `DigitalProduct` + `DigitalProductImage`. `coverImage`/`imagePath` hold either an https URL
+  or an image-store path (`outputs/images/<file>`), so poster-pipeline output can be sold
+  directly; `/api/shop-assets` + the CMS asset picker browse generated posters and mockups.
+  Deleting a listing never deletes the underlying `ImageAsset`.
+- `checkoutUrl` and image references are sanitised server-side (`sanitizeExternalUrl` /
+  `sanitizeImageReference` in `src/lib/shop.ts`): http(s) only, image paths re-anchored to
+  `outputs/images/`. These land in `href`/`img src`, so this is not optional.
+- Admin CMS at `/shop-admin` (deliberately not under `/shop`, so the public prefix stays a
+  clean read-only boundary — same split as `/blog-posts` vs `/blog`). `^/shop(/|$)` in
+  `src/proxy.ts` does not match `/shop-admin`.
+- Original work only, same rules as the poster pipeline. Every product page carries the AI
+  disclosure (`SHOP_DISCLOSURE` in `src/lib/shop.ts`), the digital-download/no-shipment note,
+  and the licence summary.
+- Hand-authored inline SVGs in `src/components/shop/Illustrations.tsx` (desk hero, enso mark,
+  per-category fallback covers) — drawn from primitives in code, no external assets. A product
+  without a cover image renders its category illustration.
+- Seeds on first boot via `seedShopIfEmpty()` in `src/lib/seed-shop.ts` (kept out of
+  `src/lib/shop.ts`, which client components import — Prisma in a client bundle breaks build).
 
 ## Future TODOs (not in MVP)
 

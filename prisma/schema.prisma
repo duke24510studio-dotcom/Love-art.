@@ -217,3 +217,53 @@ model BlogPost {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// --- Digital product shop ("余白 / YOHAKU STUDIO") ---
+// A public storefront + portfolio at /shop for the digital assets this studio
+// produces (Notion templates, digital art, illustrations, poster downloads).
+// Payment is NOT handled here: each product links out to an external checkout
+// (Gumroad / BOOTH / Stripe Payment Link) via checkoutUrl, so this app never
+// touches card data. See docs/SHOP.md.
+model DigitalProduct {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  tagline     String   @default("")
+  // Simple-markdown body (## / - / **bold** / ---), same subset as BlogPost.
+  description String   @default("")
+  // One of SHOP_CATEGORIES in src/lib/shop.ts — drives the fallback
+  // illustration shown when a product has no cover image yet.
+  category    String   @default("")
+  // Minor-unit-free integer: 1800 = ¥1,800 / $18. 0 renders as "Free".
+  price       Int      @default(0)
+  currency    String   @default("JPY")
+  // Either an image-store path ("outputs/images/x.png", i.e. a generated
+  // asset) or an absolute https URL. Empty = fall back to the category
+  // illustration.
+  coverImage  String   @default("")
+  // External checkout link. Empty = the product shows as "Coming soon"
+  // instead of a buy button.
+  checkoutUrl String   @default("")
+  fileFormat  String   @default("")
+  includes    String   @default("")
+  featured    Boolean  @default(false)
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  images DigitalProductImage[]
+}
+
+// Extra gallery shots for a product — typically generated poster/mockup
+// images attached from the admin CMS.
+model DigitalProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  imagePath String   @default("")
+  caption   String   @default("")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+}

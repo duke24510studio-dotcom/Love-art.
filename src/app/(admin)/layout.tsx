@@ -7,17 +7,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-full flex flex-col flex-1">
       <header style={{ backgroundColor: "#2d5a3d", color: "#f5f0e8" }} className="px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-y-3">
+          <Link
+            href="/"
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity shrink-0"
+          >
             <span style={{ color: "#f5f0e8" }} className="text-xl tracking-widest font-light">
               ◯
             </span>
-            <div>
+            <div className="whitespace-nowrap">
               <div className="text-sm tracking-[0.3em] font-light uppercase">Japandi Poster</div>
               <div className="text-xs tracking-[0.5em] opacity-70 uppercase">Auto Studio</div>
             </div>
           </Link>
-          <nav className="flex items-center gap-6 text-sm tracking-widest">
+          {/* Wraps rather than crushing the logo: this nav has grown to nine
+              items and no longer fits one line at laptop widths. */}
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm tracking-widest whitespace-nowrap">
             <Link href="/" className="hover:opacity-70 transition-opacity uppercase font-light">
               Dashboard
             </Link>
@@ -33,11 +38,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link href="/blog-posts" className="hover:opacity-70 transition-opacity uppercase font-light">
               Blog CMS
             </Link>
+            <Link href="/shop-admin" className="hover:opacity-70 transition-opacity uppercase font-light">
+              Shop CMS
+            </Link>
             <Link href="/youtube-multiview" className="hover:opacity-70 transition-opacity uppercase font-light">
               Multiview
             </Link>
             <Link href="/blog" className="hover:opacity-70 transition-opacity uppercase font-light">
-              Public Blog ↗
+              Blog ↗
+            </Link>
+            <Link href="/shop" className="hover:opacity-70 transition-opacity uppercase font-light">
+              Shop ↗
             </Link>
             <Link
               href="/posters/new"
